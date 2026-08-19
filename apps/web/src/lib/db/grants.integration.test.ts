@@ -1,0 +1,2 @@
+import { describe, expect, it } from "vitest";
+describe("web read layer", () => { it.skipIf(!process.env.TEST_DATABASE_URL)("reads only the public core projection", async () => { process.env.DATABASE_URL = process.env.TEST_DATABASE_URL; const { searchGrants } = await import("./grants"); const result = await searchGrants({ page: 1 }); expect(result.items.length).toBeLessThanOrEqual(20); expect(result.items.every((item) => item.bdnsCode && !("payload" in item))).toBe(true); }); });

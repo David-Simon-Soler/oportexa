@@ -11,7 +11,7 @@ flowchart LR
   T[Tareas programadas futuras] --> I
 ```
 
-La BDNS/SNPSAP es la fuente primaria inicial. El servicio Python captura lotes incrementales, conserva la respuesta RAW y metadatos de procedencia, valida los campos y produce entidades normalizadas para PostgreSQL. La web futura en Next.js + TypeScript consultará PostgreSQL mediante una API propia futura.
+La BDNS/SNPSAP es la fuente primaria inicial. El servicio Python captura lotes incrementales, conserva la respuesta RAW y metadatos de procedencia, valida los campos y produce entidades normalizadas para PostgreSQL. La web en Next.js + TypeScript consulta PostgreSQL mediante una DAL server-only; no existe una API HTTP interna en V0.2.
 
 ## Data Core V0.1 implementado
 
@@ -39,4 +39,8 @@ Las consultas de usuarios **no deberán depender directamente de la API de BDNS*
 - **Derivados/normalizados:** transformaciones propias, siempre etiquetadas.
 - **Privados de usuario (futuro):** aislados del dominio oficial, minimizados y sujetos a privacidad.
 
-Alembic es la fuente de verdad del esquema; no se crean tablas automáticamente en runtime. Para desarrollo existe un único servicio PostgreSQL en `compose.yaml`, expuesto sólo en `127.0.0.1:55432`, con volumen dedicado y healthcheck. No se implementan aún API web, tareas programadas reales, usuarios, concesiones ni documentos persistentes.
+Alembic es la fuente de verdad del esquema; no se crean tablas automáticamente en runtime. Para desarrollo existe un único servicio PostgreSQL en `compose.yaml`, expuesto sólo en `127.0.0.1:55432`, con volumen dedicado y healthcheck. No se implementan aún tareas programadas reales, usuarios, concesiones ni documentos persistentes.
+
+### Web Discovery (V0.2)
+
+`apps/web` usa App Router, TypeScript estricto y Server Components por defecto. La DAL (`src/lib/db`) usa `pg` con SQL parametrizado y sólo lee `core`; el navegador nunca accede directamente a PostgreSQL ni recibe credenciales. Las proyecciones públicas son `GrantSummary` y `GrantDetail`. Las rutas son `/`, `/subvenciones`, `/subvenciones/[slug]`, `/subvenciones/region` y `/subvenciones/region/[slug]`. El código BDNS mantiene la identidad estable de cada ficha. `SITE_URL` controla metadata base, robots y sitemap.

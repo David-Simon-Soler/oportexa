@@ -30,6 +30,7 @@ ENV/
 .env
 .env.*
 !.env.example
+!**/.env.example
 *.pem
 *.key
 secrets/
@@ -47,4 +48,3 @@ data/processed/
 *.swp
 .DS_Store
 Thumbs.db
-

@@ -1,0 +1,2 @@
+"use client";
+export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) { return <main className="mx-auto max-w-xl px-4 py-24 text-center"><h1 className="text-2xl font-semibold">No se pudo cargar esta página</h1><p className="mt-4 text-slate-600">Inténtalo de nuevo. No se muestran detalles internos del servidor.</p><button onClick={() => reset()} className="mt-6 rounded-lg bg-slate-950 px-5 py-3 text-white">Reintentar</button></main>; }

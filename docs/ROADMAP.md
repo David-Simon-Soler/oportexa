@@ -4,9 +4,9 @@
 
 PostgreSQL local aislado, migraciones Alembic, ingestión persistente incremental, RAW/CORE, provenance, idempotencia real, tests de integración, inspección, consultas analíticas y quality report inicial completados. El dataset de validación se limita a 50 convocatorias recientes; no incluye backfill histórico.
 
-## V0.2 — Discovery
+## V0.2 — Discovery — COMPLETE
 
-Web pública, buscador, fichas, filtros y SEO básico.
+Base web Next.js con lectura server-side de PostgreSQL, catálogo, detalle, regiones, metadata y sitemap completada. Incluye lint, tests unitarios, integración PostgreSQL y build. Limitación: no existe validación visual automatizada porque `agent-browser` no está disponible en el entorno; se mantiene validación estructural y CSS responsive.
 
 ## V1 — Personalization
 

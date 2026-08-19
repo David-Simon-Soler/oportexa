@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function NotFound() { return <main className="mx-auto max-w-xl px-4 py-24 text-center"><p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">404</p><h1 className="mt-3 text-3xl font-semibold">No encontramos esa convocatoria</h1><p className="mt-4 text-slate-600">La URL puede haber cambiado o la convocatoria no está en el catálogo local.</p><Link href="/subvenciones" className="mt-7 inline-block rounded-lg bg-slate-950 px-5 py-3 text-white">Volver al catálogo</Link></main>; }

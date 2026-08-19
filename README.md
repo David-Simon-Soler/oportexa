@@ -12,11 +12,11 @@ Un servicio Python ingerirá datos oficiales, conservará la respuesta RAW y su 
 
 ## Estado actual
 
-Data Core inicial implementado: cliente BDNS, modelos RAW, PostgreSQL/Alembic, transformación RAW → CORE, ETL incremental y tests. No hay frontend funcional, API web, autenticación, IA, matching, pagos, email ni despliegue.
+V0.1 Data Core está completado: cliente BDNS, modelos RAW, PostgreSQL/Alembic, transformación RAW → CORE, ETL incremental, validación y 50 convocatorias de comprobación. V0.2 Discovery está en progreso con una base Next.js server-side, catálogo, fichas, regiones y SEO técnico inicial. No hay usuarios, autenticación, IA, matching, pagos, email ni despliegue.
 
 ## Organización
 
-- `apps/web/`: espacio reservado para la futura web Next.js.
+- `apps/web/`: aplicación Next.js de Discovery; consulta sólo `core` mediante DAL server-only.
 - `services/ingestion/`: espacio reservado para pipelines Python.
 - `packages/database/`: contrato y futura capa de acceso/migraciones de datos.
 - `docs/`: documentación de producto, arquitectura y operación.

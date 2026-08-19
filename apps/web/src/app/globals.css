@@ -1,0 +1,5 @@
+@import "tailwindcss";
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { text-underline-offset: 3px; }
