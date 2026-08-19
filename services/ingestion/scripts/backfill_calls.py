@@ -20,6 +20,7 @@ def main() -> int:
     parser.add_argument("--resume", action="store_true", help="Resume the latest non-completed run for each window and skip completed windows.")
     parser.add_argument("--max-windows", type=int, help="Process at most N windows; useful for controlled tests.")
     parser.add_argument("--limit-per-window", type=int, help="Stop after N successfully fetched details and leave the window interrupted.")
+    parser.add_argument("--max-records", type=int, help="Stop after approximately N attempted details, including unchanged and failed details; resume is safe.")
     parser.add_argument("--retry-failed", action="store_true", help="Retry unresolved per-code failures for each resumed run.")
     parser.add_argument("--dry-run", action="store_true", help="Print the plan without writing runs, failures, RAW or CORE.")
     parser.add_argument("--page-size", type=int, default=DEFAULT_PAGE_SIZE, help=f"BDNS listing page size (default: {DEFAULT_PAGE_SIZE}, maximum: 500).")
@@ -35,6 +36,7 @@ def main() -> int:
             resume=args.resume,
             max_windows=args.max_windows,
             limit_per_window=args.limit_per_window,
+            max_records=args.max_records,
             retry_failed=args.retry_failed,
             dry_run=args.dry_run,
             page_size=args.page_size,
@@ -49,6 +51,7 @@ def main() -> int:
     print(f"Skipped: {result.skipped}")
     print(f"Pages: {result.pages}")
     print(f"Fetched: {result.fetched}")
+    print(f"Processed details: {result.processed}")
     print(f"Succeeded: {result.succeeded}")
     print(f"Failed: {result.failed}")
     print(f"New: {result.new}")

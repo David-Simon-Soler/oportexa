@@ -51,3 +51,11 @@ El motor posterior al checkpoint usa ventanas inclusivas, streaming página-a-p�
 También se probó una ventana mensual de diciembre de 2025 cuyo listado anunciaba 7.338 elementos. El proceso alcanzó 1.298 detalles confirmados y `last_page=12` antes de ser detenido para respetar el límite de esta sesión; el run quedó `interrupted` y sin fallos pendientes tras reintentar los fallos de interrupción. El dataset final alcanzó 1.811 convocatorias, por encima del objetivo aproximado de 1.500 debido a que el proceso inicialmente no propagaba correctamente `SIGINT` desde el manejo de fallos individuales. Ese bug se corrigió y no se lanzarán más cargas reales en esta sesión.
 
 Tras la prueba, las medidas finales fueron: RAW/CORE 1.811, `core.grant_calls` 1.646.592 bytes, `raw.bdns_grant_calls` 6.537.216 bytes y base completa 18.390.039 bytes. Las extrapolaciones anteriores siguen basadas en la medición controlada de 530 registros y no deben recalcularse linealmente a partir de esta ejecución parcial, que tiene una distribución temporal sesgada.
+
+## Prueba SIGINT y resume posterior al checkpoint
+
+El checkpoint del motor quedó registrado en `ab14a93` (`feat: add resumable historical backfill engine`). La prueba limpia de interrupción utilizó `2025-12-20`, `daily`, `page_size=1`: se confirmaron las páginas 0–3, se recibió SIGINT durante el procesamiento posterior y el run 6 quedó `interrupted` con `fetched=4`, `succeeded=4`, `failed=0`, `last_page=3`. La reanudación arrancó en la página 4, confirmó un detalle y terminó la ventana con cinco registros, sin duplicados.
+
+Durante una tentativa anterior, SIGINT llegó dentro de un rollback de PostgreSQL y produjo un fallo operacional transitorio. El manejo se corrigió después del checkpoint para diferir SIGINT hasta un punto seguro; la regresión y la prueba real posterior no generaron ese fallo. El run 4 conserva la auditoría de la tentativa, pero terminó con cero fallos activos tras retry.
+
+El dataset de desarrollo queda en 1.840 RAW/CORE, no se realizarán más cargas reales en esta sesión. Mediciones actuales aproximadas: schema RAW 6,48 MB, schema CORE 3,08 MB, schema OPS 160 KB y base completa 18 MB. Son tamaños locales con índices y catálogos, no una garantía de almacenamiento histórico.

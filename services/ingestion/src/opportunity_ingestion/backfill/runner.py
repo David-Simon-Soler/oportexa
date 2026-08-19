@@ -42,6 +42,7 @@ class BackfillResult:
     skipped: int = 0
     pages: int = 0
     fetched: int = 0
+    processed: int = 0
     succeeded: int = 0
     failed: int = 0
     new: int = 0
@@ -115,7 +116,7 @@ def _install_signal_handler():
 
     def handler(signum, _frame):
         interrupted["value"] = True
-        raise BackfillInterrupted(f"received signal {signum}")
+        logger.warning("backfill_interrupt_requested signal=%s", signum)
 
     previous = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, handler)
@@ -126,6 +127,18 @@ def _restore_signal_handler(previous) -> None:
     signal.signal(signal.SIGINT, previous)
 
 
+def _raise_if_interrupted(interrupted_state: dict[str, bool]) -> None:
+    if interrupted_state["value"]:
+        raise BackfillInterrupted("received SIGINT at a safe checkpoint")
+
+
+def _consume_record_budget(result: BackfillResult, max_records: int | None) -> None:
+    """Consume one budget unit for every detail attempt, including failures."""
+    if max_records is not None and result.processed >= max_records:
+        raise BackfillInterrupted("max_records reached")
+    result.processed += 1
+
+
 def run_backfill(
     *,
     date_from: date,
@@ -134,6 +147,7 @@ def run_backfill(
     resume: bool = False,
     max_windows: int | None = None,
     limit_per_window: int | None = None,
+    max_records: int | None = None,
     retry_failed: bool = False,
     dry_run: bool = False,
     page_size: int = DEFAULT_PAGE_SIZE,
@@ -143,6 +157,8 @@ def run_backfill(
         raise ValueError("page_size must be between 1 and 500")
     if limit_per_window is not None and limit_per_window < 1:
         raise ValueError("limit_per_window must be positive")
+    if max_records is not None and max_records < 1:
+        raise ValueError("max_records must be positive")
     selected = windows[:max_windows] if max_windows is not None else windows
     result = BackfillResult(windows=len(selected))
     started = time.perf_counter()
@@ -165,7 +181,17 @@ def run_backfill(
                     result.skipped += 1
                     continue
                 try:
-                    _run_window(engine, item, result, resume=resume, retry_failed=retry_failed, limit_per_window=limit_per_window, page_size=page_size)
+                    _run_window(
+                        engine,
+                        item,
+                        result,
+                        resume=resume,
+                        retry_failed=retry_failed,
+                        limit_per_window=limit_per_window,
+                        max_records=max_records,
+                        page_size=page_size,
+                        interrupted_state=interrupted_state,
+                    )
                 finally:
                     release_window_lock(lock_connection, key)
     except BackfillInterrupted as interruption:
@@ -179,7 +205,18 @@ def run_backfill(
     return result
 
 
-def _run_window(engine, item: DateWindow, result: BackfillResult, *, resume: bool, retry_failed: bool, limit_per_window: int | None, page_size: int) -> None:
+def _run_window(
+    engine,
+    item: DateWindow,
+    result: BackfillResult,
+    *,
+    resume: bool,
+    retry_failed: bool,
+    limit_per_window: int | None,
+    max_records: int | None,
+    page_size: int,
+    interrupted_state: dict[str, bool],
+) -> None:
     with session_factory(engine)() as session:
         with session.begin():
             existing = latest_run(session, source=SOURCE, date_from=item.date_from, date_to=item.date_to) if resume else None
@@ -203,6 +240,7 @@ def _run_window(engine, item: DateWindow, result: BackfillResult, *, resume: boo
                 fechaDesde=item.date_from.strftime("%d/%m/%Y"),
                 fechaHasta=item.date_to.strftime("%d/%m/%Y"),
             ):
+                _raise_if_interrupted(interrupted_state)
                 page_number = page.number if page.number is not None else start_page + page_count
                 page_started = time.perf_counter()
                 page_fetched = page_succeeded = page_failed = 0
@@ -210,9 +248,11 @@ def _run_window(engine, item: DateWindow, result: BackfillResult, *, resume: boo
                 for summary in page.content:
                     if limit_per_window is not None and window_fetched >= limit_per_window:
                         raise BackfillInterrupted("limit_per_window reached")
+                    _consume_record_budget(result, max_records)
                     code = summary.numero_convocatoria
                     try:
                         outcome = ingest_one(factory=session_factory(engine), client=client, bdns_code=code)
+                        _raise_if_interrupted(interrupted_state)
                         page_fetched += 1
                         window_fetched += 1
                         page_succeeded += 1
@@ -231,13 +271,16 @@ def _run_window(engine, item: DateWindow, result: BackfillResult, *, resume: boo
                             with failure_session.begin():
                                 record_failure(failure_session, run_id=run_id, bdns_code=code, stage="detail", error=error)
                         logger.warning("grant_failed bdns_code=%s error_type=%s", code, type(error).__name__)
+                    _raise_if_interrupted(interrupted_state)
                 _update_page_checkpoint(engine, run_id, page=page_number, fetched=page_fetched, succeeded=page_succeeded, failed=page_failed)
+                _raise_if_interrupted(interrupted_state)
                 page_count += 1
                 result.pages += 1
                 result.requests_approx += 1
                 logger.info("page_completed run=%s page=%s fetched=%s succeeded=%s failed=%s duration_ms=%.0f", run_id, page_number, page_fetched, page_succeeded, page_failed, (time.perf_counter() - page_started) * 1000)
                 if page.last is True or not page.content:
                     break
+            _raise_if_interrupted(interrupted_state)
             if retry_failed:
                 resolved = _retry_run_failures(engine, run_id, client, result=result)
                 if resolved:

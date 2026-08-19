@@ -40,6 +40,7 @@ Los fallos de detalle se clasifican por código y causa en `ops.ingestion_failur
 - Transacción RAW + CORE por convocatoria.
 - Checkpoint por última página confirmada.
 - `--resume`, `--max-windows`, `--limit-per-window`, `--retry-failed` y `--dry-run`.
+- `--max-records` como guardrail de sesión; consume una unidad por cada detalle intentado, incluido `unchanged` o fallido. Al alcanzarlo se detiene antes de confirmar la siguiente página y el reintento es idempotente.
 - Advisory lock PostgreSQL por ventana.
 - Logging compacto por ventana/página y errores sanitizados.
 - Inspección read-only de runs y fallos.
@@ -49,6 +50,7 @@ Los fallos de detalle se clasifican por código y causa en `ops.ingestion_failur
 - Reanudación distribuida entre workers, que no se necesita para el modo secuencial actual.
 - Política de backfill histórico masivo y retención de logs.
 - Revalidación programada diaria/semanal/mensual.
+- Subdivisión automática de ventanas densas (`monthly` → `weekly` → `daily`), pendiente de evidencia de densidad y de una política de cobertura probada.
 
 ## Actualización continua
 
