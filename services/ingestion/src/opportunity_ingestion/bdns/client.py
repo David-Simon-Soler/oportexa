@@ -67,7 +67,7 @@ class BdnsClient:
                 raise BdnsRequestError("BDNS request failed") from exc
 
             duration_ms = (time.perf_counter() - started) * 1000
-            logger.info("BDNS request completed endpoint=%s status=%s duration_ms=%.0f", path, response.status_code, duration_ms)
+            logger.debug("BDNS request completed endpoint=%s status=%s duration_ms=%.0f", path, response.status_code, duration_ms)
             if response.status_code == 429 or response.status_code >= 500:
                 if attempts < self.config.max_retries:
                     attempts += 1
@@ -95,11 +95,15 @@ class BdnsClient:
             raise ValueError("page_size must be between 1 and 10000")
         return RawPage.model_validate(self._get_json("/convocatorias/ultimas", {"page": page, "pageSize": size}))
 
-    def iter_search_calls(self, *, max_pages: int | None = None, page_size: int | None = None, **filters: Any) -> Iterator[RawPage]:
-        page = 0
-        while max_pages is None or page < max_pages:
+    def iter_search_calls(self, *, max_pages: int | None = None, page_size: int | None = None, start_page: int = 0, **filters: Any) -> Iterator[RawPage]:
+        if start_page < 0:
+            raise ValueError("start_page must not be negative")
+        page = start_page
+        pages_emitted = 0
+        while max_pages is None or pages_emitted < max_pages:
             result = self.search_calls(page=page, page_size=page_size, **filters)
             yield result
+            pages_emitted += 1
             if result.last is True or not result.content:
                 break
             page += 1
@@ -111,4 +115,3 @@ class BdnsClient:
         if portal_id is not None:
             params["vpd"] = portal_id
         return RawCallDetail.model_validate(self._get_json("/convocatorias", params))
-

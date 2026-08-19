@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import os
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -12,12 +13,16 @@ from sqlalchemy import func, select, text
 from opportunity_ingestion.db.models import (
     GrantCall,
     GrantCallSector,
+    IngestionFailure,
+    IngestionRun,
     RawBdnsGrantCall,
     Sector,
 )
 from opportunity_ingestion.db.session import create_db_engine, session_factory
 from opportunity_ingestion.repositories.grant_calls import upsert_core_grant_call
 from opportunity_ingestion.repositories.raw_grant_calls import canonical_payload_hash, upsert_raw_grant_call
+from opportunity_ingestion.backfill.ops import record_failure, release_window_lock, try_acquire_window_lock
+from opportunity_ingestion.backfill.runner import BackfillResult, _retry_run_failures, _update_page_checkpoint
 from opportunity_ingestion.transformers.grant_call import raw_payload, transform_call
 from ..test_data_core import detail
 
@@ -35,7 +40,7 @@ def test_engine():
     command.upgrade(config, "head")
     engine = create_db_engine(TEST_DATABASE_URL)
     with engine.begin() as connection:
-        connection.execute(text("TRUNCATE core.grant_call_organizations, core.grant_call_sectors, core.grant_call_regions, core.grant_call_beneficiary_types, core.grant_call_funds, core.grant_calls, core.organizations, core.sectors, core.regions, core.beneficiary_types, core.funds, raw.bdns_grant_calls RESTART IDENTITY CASCADE"))
+        connection.execute(text("TRUNCATE ops.ingestion_failures, ops.ingestion_runs, core.grant_call_organizations, core.grant_call_sectors, core.grant_call_regions, core.grant_call_beneficiary_types, core.grant_call_funds, core.grant_calls, core.organizations, core.sectors, core.regions, core.beneficiary_types, core.funds, raw.bdns_grant_calls RESTART IDENTITY CASCADE"))
     yield engine
     engine.dispose()
     if previous is None:
@@ -73,6 +78,65 @@ def test_postgres_upsert_and_idempotence(test_engine):
 def test_ingestion_checkpoint_table_exists(test_engine):
     with test_engine.connect() as connection:
         assert connection.execute(text("select to_regclass('ops.ingestion_runs')")).scalar_one() == "ops.ingestion_runs"
+
+
+def test_failure_is_deduplicated_and_can_be_resolved(test_engine):
+    with session_factory(test_engine)() as session:
+        with session.begin():
+            run = IngestionRun(source="bdns", date_from=date(2024, 1, 1), date_to=date(2024, 1, 31), status="running")
+            session.add(run)
+            session.flush()
+            first = record_failure(session, run_id=run.id, bdns_code="failure-test", stage="detail", error=ValueError("password=hidden"))
+            second = record_failure(session, run_id=run.id, bdns_code="failure-test", stage="detail", error=ValueError("password=changed"))
+            assert first.id == second.id
+            assert second.attempts == 2
+            assert "hidden" not in second.error_message
+            assert "[REDACTED]" in second.error_message
+        failure = session.get(IngestionFailure, first.id)
+        failure.resolved_at = datetime.now(timezone.utc)
+        session.commit()
+        assert failure.resolved_at is not None
+
+
+def test_window_advisory_lock_prevents_duplicate_processing(test_engine):
+    first = test_engine.connect()
+    second = test_engine.connect()
+    key = "test-window-lock"
+    try:
+        assert try_acquire_window_lock(first, key) is True
+        assert try_acquire_window_lock(second, key) is False
+        release_window_lock(first, key)
+        assert try_acquire_window_lock(second, key) is True
+        release_window_lock(second, key)
+    finally:
+        first.close()
+        second.close()
+
+
+def test_checkpoint_update_and_failure_retry(test_engine):
+    from ..test_data_core import detail as make_detail
+
+    with session_factory(test_engine)() as session:
+        with session.begin():
+            run = IngestionRun(source="bdns", date_from=date(2024, 2, 1), date_to=date(2024, 2, 29), status="running")
+            session.add(run)
+            session.flush()
+            run_id = run.id
+            record_failure(session, run_id=run_id, bdns_code="retry-test", stage="detail", error=ValueError("temporary"))
+    _update_page_checkpoint(test_engine, run_id, page=4, fetched=2, succeeded=2, failed=0)
+    class FakeDetailClient:
+        config = SimpleNamespace(base_url="https://example.invalid/api")
+        def get_call_detail(self, code):
+            return make_detail(codigoBDNS=code)
+    result = BackfillResult()
+    resolved = _retry_run_failures(test_engine, run_id, FakeDetailClient(), result=result)
+    with session_factory(test_engine)() as session:
+        run = session.get(IngestionRun, run_id)
+        failure = session.scalar(select(IngestionFailure).where(IngestionFailure.ingestion_run_id == run_id))
+        assert resolved == 1
+        assert run.last_page == 4
+        assert run.fetched == 2
+        assert failure.resolved_at is not None
 
 
 def test_postgres_fund_catalog_does_not_require_code(test_engine):

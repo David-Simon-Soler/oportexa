@@ -21,15 +21,34 @@ Cada página de listado produce códigos BDNS y cada código se resuelve mediant
 
 ## Reanudación y checkpoints
 
-Para cargas de cientos de miles la reanudación segura necesita estado persistente. La migración `20260819_0002_ingestion_runs` crea `ops.ingestion_runs` con ventana, estado, tiempos, contadores, última página y resumen de errores. La siguiente iteración del comando de backfill deberá crear una fila `running`, actualizar `last_page` y contadores por lote, y marcar `completed` o `failed` al finalizar. El estado operacional permanece separado de `core`.
+Para cargas de cientos de miles la reanudación segura necesita estado persistente. La migración `20260819_0002_ingestion_runs` crea `ops.ingestion_runs` con ventana, estado, tiempos, contadores, última página y resumen de errores. El motor `backfill_calls.py` ya crea/reutiliza el run, actualiza `last_page` después de cada página confirmada y marca `completed`, `failed` o `interrupted`. El estado operacional permanece separado de `core`.
 
-La unidad de reanudación es una ventana más su página de listado. Si una ejecución se interrumpe, se retoma desde la última página confirmada; los códigos de esa página se pueden repetir sin duplicar datos.
+La unidad de reanudación es una ventana más su página de listado. `last_page` significa la última página completamente confirmada, no la última iniciada. Si una ejecución se interrumpe antes del checkpoint, se repite esa página; los códigos se pueden repetir sin duplicar datos. Las ventanas completadas se omiten con `--resume`.
 
 ## Idempotencia y fallos
 
 `bdns_code` identifica la convocatoria y el hash del payload RAW distingue sin cambios de cambios reales. RAW y CORE se escriben en una transacción por convocatoria. Los códigos que fallen deben conservarse en el resumen o en una cola de retry posterior, sin marcar la ventana como completamente correcta.
 
-Los fallos de detalle se clasifican por código y causa: fuente, respuesta inválida, timeout, límite o error de transformación. Las reintentos posteriores deben ser acotados y no bloquear ventanas independientes.
+Los fallos de detalle se clasifican por código y causa en `ops.ingestion_failures`; se conserva el histórico y se impide duplicar el mismo fallo activo. `--retry-failed` permite volver a intentarlos y marca `resolved_at` al resolverlos. Los reintentos son acotados y no bloquean ventanas independientes.
+
+## Estado de implementación
+
+### IMPLEMENTED
+
+- Ventanas daily, weekly y monthly inclusivas, contiguas y deterministas.
+- Streaming por página con tamaño por defecto 100 y máximo operativo 500.
+- Transacción RAW + CORE por convocatoria.
+- Checkpoint por última página confirmada.
+- `--resume`, `--max-windows`, `--limit-per-window`, `--retry-failed` y `--dry-run`.
+- Advisory lock PostgreSQL por ventana.
+- Logging compacto por ventana/página y errores sanitizados.
+- Inspección read-only de runs y fallos.
+
+### PLANNED
+
+- Reanudación distribuida entre workers, que no se necesita para el modo secuencial actual.
+- Política de backfill histórico masivo y retención de logs.
+- Revalidación programada diaria/semanal/mensual.
 
 ## Actualización continua
 

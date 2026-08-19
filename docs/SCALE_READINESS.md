@@ -43,3 +43,11 @@ La media lineal de la relación RAW es aproximadamente 3,7 KB por convocatoria y
 - Se añadió `ops.ingestion_runs` mediante Alembic para separar estado de carga y datos de producto.
 - La siguiente evolución debe procesar una ventana/página por vez y actualizar `last_page` y contadores de `ops.ingestion_runs`; todavía no se activa una campaña histórica completa.
 - No se optimizan índices ni se añade un motor externo sin evidencia de volumen y consultas reales.
+
+## Motor de backfill controlado
+
+El motor posterior al checkpoint usa ventanas inclusivas, streaming página-a-página, `page_size=100`, transacción por convocatoria, checkpoints OPS y advisory locks. Una prueba diaria de dos ventanas de baja densidad procesó 3 detalles en 1,107 segundos y aproximadamente 5 peticiones, con 3 nuevos.
+
+También se probó una ventana mensual de diciembre de 2025 cuyo listado anunciaba 7.338 elementos. El proceso alcanzó 1.298 detalles confirmados y `last_page=12` antes de ser detenido para respetar el límite de esta sesión; el run quedó `interrupted` y sin fallos pendientes tras reintentar los fallos de interrupción. El dataset final alcanzó 1.811 convocatorias, por encima del objetivo aproximado de 1.500 debido a que el proceso inicialmente no propagaba correctamente `SIGINT` desde el manejo de fallos individuales. Ese bug se corrigió y no se lanzarán más cargas reales en esta sesión.
+
+Tras la prueba, las medidas finales fueron: RAW/CORE 1.811, `core.grant_calls` 1.646.592 bytes, `raw.bdns_grant_calls` 6.537.216 bytes y base completa 18.390.039 bytes. Las extrapolaciones anteriores siguen basadas en la medición controlada de 530 registros y no deben recalcularse linealmente a partir de esta ejecución parcial, que tiene una distribución temporal sesgada.

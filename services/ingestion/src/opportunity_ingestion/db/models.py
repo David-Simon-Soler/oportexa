@@ -30,6 +30,22 @@ class IngestionRun(Base):
     error_summary: Mapped[str | None] = mapped_column(Text)
 
 
+class IngestionFailure(Base):
+    __tablename__ = "ingestion_failures"
+    __table_args__ = {"schema": "ops"}
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    ingestion_run_id: Mapped[int] = mapped_column(ForeignKey("ops.ingestion_runs.id", ondelete="CASCADE"), nullable=False)
+    bdns_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    stage: Mapped[str] = mapped_column(String(32), nullable=False)
+    error_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    error_message: Mapped[str] = mapped_column(Text, nullable=False)
+    attempts: Mapped[int] = mapped_column(default=1, nullable=False)
+    first_failed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class RawBdnsGrantCall(Base):
     __tablename__ = "bdns_grant_calls"
     __table_args__ = {"schema": "raw"}

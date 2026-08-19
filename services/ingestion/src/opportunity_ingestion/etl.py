@@ -23,6 +23,33 @@ class IngestionSummary:
     failed: int = 0
 
 
+def ingest_one(*, factory, client: BdnsClient, bdns_code: str, dry_run: bool = False) -> str:
+    """Fetch, transform and atomically persist one call.
+
+    Returns new, updated or unchanged. Both the legacy batch ETL and the
+    streaming backfill use this primitive so RAW/CORE semantics stay aligned.
+    """
+    detail = client.get_call_detail(bdns_code)
+    data = transform_call(detail)
+    payload = raw_payload(detail)
+    if dry_run:
+        return "new"
+    if factory is None:
+        raise RuntimeError("a database session factory is required when dry_run is false")
+    with factory() as session:
+        with session.begin():
+            raw_row, raw_changed = upsert_raw_grant_call(
+                session,
+                bdns_code=bdns_code,
+                payload=payload,
+                source_endpoint=f"{client.config.base_url}/convocatorias",
+            )
+            _, core_new = upsert_core_grant_call(session, data=data, raw_id=raw_row.id)
+    if core_new:
+        return "new"
+    return "updated" if raw_changed else "unchanged"
+
+
 def ingest_calls(
     *,
     date_from: date,
@@ -57,33 +84,11 @@ def ingest_calls(
                 code = item.numero_convocatoria
                 try:
                     logger.info("grant_ingestion_started bdns_code=%s", code)
-                    detail = client.get_call_detail(code)
-                    data = transform_call(detail)
-                    payload = raw_payload(detail)
+                    outcome = ingest_one(factory=factory, client=client, bdns_code=code, dry_run=dry_run)
                     summary.fetched += 1
-                    if dry_run:
-                        logger.info("grant_validated bdns_code=%s", code)
+                    if outcome == "new":
                         summary.new += 1
-                        continue
-
-                    assert factory is not None
-                    with factory() as session:
-                        with session.begin():
-                            raw_row, raw_changed = upsert_raw_grant_call(
-                                session,
-                                bdns_code=code,
-                                payload=payload,
-                                source_endpoint=f"{client.config.base_url}/convocatorias",
-                            )
-                            if raw_changed:
-                                logger.info("grant_raw_created_or_changed bdns_code=%s", code)
-                            else:
-                                logger.info("grant_raw_unchanged bdns_code=%s", code)
-                            _, core_new = upsert_core_grant_call(session, data=data, raw_id=raw_row.id)
-                            logger.info("grant_core_upserted bdns_code=%s", code)
-                    if core_new:
-                        summary.new += 1
-                    elif raw_changed:
+                    elif outcome == "updated":
                         summary.updated += 1
                     else:
                         summary.unchanged += 1

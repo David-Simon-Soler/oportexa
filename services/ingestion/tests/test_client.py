@@ -83,8 +83,21 @@ def test_pagination_stops_at_last_page():
     assert [page.content[0].numero_convocatoria for page in pages] == ["0", "1"]
 
 
+def test_pagination_can_resume_from_a_confirmed_page():
+    requests = []
+
+    def handler(request):
+        requests.append(request.url.params["page"])
+        page = int(request.url.params["page"])
+        return httpx.Response(200, json={"content": [{"numeroConvocatoria": str(page)}], "last": page == 2})
+
+    with client_for(handler) as client:
+        pages = list(client.iter_search_calls(start_page=2, max_pages=2))
+    assert requests == ["2"]
+    assert pages[0].content[0].numero_convocatoria == "2"
+
+
 def test_page_size_limit_is_enforced():
     with client_for(lambda request: httpx.Response(200, json={"content": []})) as client:
         with pytest.raises(ValueError):
             client.search_calls(page_size=10_001)
-
