@@ -39,7 +39,7 @@ Las consultas de usuarios **no deberán depender directamente de la API de BDNS*
 - **Derivados/normalizados:** transformaciones propias, siempre etiquetadas.
 - **Privados de usuario (futuro):** aislados del dominio oficial, minimizados y sujetos a privacidad.
 
-Alembic es la fuente de verdad del esquema; no se crean tablas automáticamente en runtime. Para desarrollo existe un único servicio PostgreSQL en `compose.yaml`, expuesto sólo en `127.0.0.1:55432`, con volumen dedicado y healthcheck. No se implementan aún tareas programadas reales, usuarios, concesiones ni documentos persistentes.
+Alembic es la fuente de verdad del esquema; no se crean tablas automáticamente en runtime. Para desarrollo existe un único servicio PostgreSQL en `compose.yaml`, expuesto sólo en `127.0.0.1:55432`, con volumen dedicado y healthcheck. `ops.ingestion_runs` conserva checkpoints operativos de futuras cargas históricas sin mezclarlos con CORE de producto. No se implementan aún tareas programadas reales, usuarios, concesiones ni documentos persistentes.
 
 ### Web Discovery (V0.2)
 

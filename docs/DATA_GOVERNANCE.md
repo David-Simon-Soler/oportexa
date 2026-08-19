@@ -24,6 +24,8 @@ Las correcciones deberán conservar el valor anterior y el motivo, actor y times
 
 Cada convocatoria se procesa en una transacción propia: si falla su transformación o persistencia, se registra el código BDNS y el lote continúa con las demás. La idempotencia se basa en el código BDNS único, hash RAW, claves únicas de catálogos y claves primarias compuestas de relaciones.
 
+Las ejecuciones de backfill se registran separadamente en `ops.ingestion_runs`: una fila representa una ventana temporal y su estado operativo. Esta tabla no es fuente de verdad de convocatorias y no sustituye la procedencia conservada en RAW/CORE.
+
 ## Control inicial del dataset local
 
-En la validación del 2026-08-19 se persistieron 50 convocatorias recientes: 50 códigos RAW únicos y 50 códigos CORE únicos, sin duplicados ni referencias huérfanas. El lote presentó 44% de convocatorias sin fecha de inicio, 42% sin fecha de fin y 3 convocatorias con múltiples sectores; no presentó presupuestos, organismos, regiones, sectores o beneficiarios ausentes. Estas cifras describen únicamente el dataset local parcial, no el universo completo de BDNS.
+En la ampliación controlada del 2026-08-19 se persistieron 530 convocatorias: 530 códigos RAW únicos y 530 códigos CORE únicos, sin duplicados ni referencias huérfanas. El lote presentó 32,45% de convocatorias sin fecha de inicio, 29,25% sin fecha de fin y 98 convocatorias con múltiples sectores; no presentó presupuestos, organismos, regiones, sectores o beneficiarios ausentes. Estas cifras describen únicamente el dataset local parcial, no el universo completo de BDNS.

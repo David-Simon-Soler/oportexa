@@ -70,6 +70,25 @@ def test_postgres_upsert_and_idempotence(test_engine):
         assert session.scalar(select(func.count()).select_from(GrantCallSector)) == 1
 
 
+def test_ingestion_checkpoint_table_exists(test_engine):
+    with test_engine.connect() as connection:
+        assert connection.execute(text("select to_regclass('ops.ingestion_runs')")).scalar_one() == "ops.ingestion_runs"
+
+
+def test_postgres_fund_catalog_does_not_require_code(test_engine):
+    from ..test_data_core import detail as make_detail
+    from opportunity_ingestion.transformers.grant_call import raw_payload, transform_call
+    from opportunity_ingestion.repositories.grant_calls import upsert_core_grant_call
+    from opportunity_ingestion.repositories.raw_grant_calls import upsert_raw_grant_call
+
+    detail_model = make_detail(fondos=[{"descripcion": "Fondo de prueba"}])
+    with session_factory(test_engine)() as session:
+        with session.begin():
+            raw, _ = upsert_raw_grant_call(session, bdns_code="fund-test", payload=raw_payload(detail_model), source_endpoint="test")
+            upsert_core_grant_call(session, data=transform_call(detail_model), raw_id=raw.id)
+        assert session.scalar(text("select count(*) from core.funds where description = 'Fondo de prueba'")) == 1
+
+
 def test_postgres_payload_change_updates_raw_and_core(test_engine):
     changed_detail = detail(descripcion="Ayudas de prueba corregidas", presupuestoTotal=12000)
     with session_factory(test_engine)() as session:

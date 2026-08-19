@@ -12,6 +12,24 @@ class Base(DeclarativeBase):
     pass
 
 
+class IngestionRun(Base):
+    __tablename__ = "ingestion_runs"
+    __table_args__ = {"schema": "ops"}
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(64), nullable=False)
+    date_from: Mapped[date] = mapped_column(Date, nullable=False)
+    date_to: Mapped[date] = mapped_column(Date, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    fetched: Mapped[int] = mapped_column(default=0, nullable=False)
+    succeeded: Mapped[int] = mapped_column(default=0, nullable=False)
+    failed: Mapped[int] = mapped_column(default=0, nullable=False)
+    last_page: Mapped[int | None] = mapped_column()
+    error_summary: Mapped[str | None] = mapped_column(Text)
+
+
 class RawBdnsGrantCall(Base):
     __tablename__ = "bdns_grant_calls"
     __table_args__ = {"schema": "raw"}
@@ -140,4 +158,3 @@ class GrantCallFund(Base):
     __table_args__ = {"schema": "core"}
     grant_call_id: Mapped[int] = mapped_column(ForeignKey("core.grant_calls.id", ondelete="CASCADE"), primary_key=True)
     fund_id: Mapped[int] = mapped_column(ForeignKey("core.funds.id", ondelete="CASCADE"), primary_key=True)
-

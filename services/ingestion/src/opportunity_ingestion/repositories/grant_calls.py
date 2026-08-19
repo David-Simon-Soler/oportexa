@@ -24,7 +24,10 @@ from opportunity_ingestion.transformers.grant_call import CatalogValue, CoreGran
 def _upsert_catalog(session: Session, model: type, value: CatalogValue):
     row = session.scalar(select(model).where(model.source_key == value.source_key))
     if row is None:
-        row = model(source_key=value.source_key, code=value.code, description=value.description)
+        attributes = {"source_key": value.source_key, "description": value.description}
+        if hasattr(model, "code"):
+            attributes["code"] = value.code
+        row = model(**attributes)
         session.add(row)
         session.flush()
     return row
