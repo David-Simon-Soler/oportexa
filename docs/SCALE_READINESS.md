@@ -59,3 +59,29 @@ El checkpoint del motor quedó registrado en `ab14a93` (`feat: add resumable his
 Durante una tentativa anterior, SIGINT llegó dentro de un rollback de PostgreSQL y produjo un fallo operacional transitorio. El manejo se corrigió después del checkpoint para diferir SIGINT hasta un punto seguro; la regresión y la prueba real posterior no generaron ese fallo. El run 4 conserva la auditoría de la tentativa, pero terminó con cero fallos activos tras retry.
 
 El dataset de desarrollo queda en 1.840 RAW/CORE, no se realizarán más cargas reales en esta sesión. Mediciones actuales aproximadas: schema RAW 6,48 MB, schema CORE 3,08 MB, schema OPS 160 KB y base completa 18 MB. Son tamaños locales con índices y catálogos, no una garantía de almacenamiento histórico.
+
+## Campaña staged posterior
+
+Se ejecutó una campaña limitada sobre julio y agosto de 2026, siempre con `--max-records`, `page_size=100` y partición semanal:
+
+- Agosto: 2.475 detalles intentados, 2.475 nuevos, 0 fallos. Ritmo agregado aproximado: 3,4 grants/s.
+- Julio: 1.500 detalles intentados, 1.500 nuevos, 0 fallos. La primera semana confirmó 1.408 páginas; el remanente quedó en una página no confirmada del run siguiente.
+- Total campaña: 3.975 intentos, 3.525 nuevos y aproximadamente 450 `unchanged` por revalidación/idempotencia.
+
+El run interrumpido por `--max-records` puede contener escrituras de una página no confirmada, pero sus contadores y `last_page` sólo reflejan páginas confirmadas. El resume repite esa página de forma segura y corrige la contabilidad sin duplicar RAW/CORE.
+
+El estado final es 5.365 RAW/CORE. Medidas PostgreSQL: schema RAW 19,3 MB, schema CORE 7,4 MB, schema OPS 192 KB y base completa 34 MB. Las relaciones principales permanecen sin huérfanos.
+
+## Proyección actualizada
+
+Con el ritmo staged observado, aproximadamente 3,4–3,7 grants/s, y el tamaño local actual:
+
+| CORE | Tiempo estimado | Peticiones aproximadas | Base completa estimada |
+| ---: | ---: | ---: | ---: |
+| 10k | 45–50 min | 10k–10,2k | ~66 MB |
+| 50k | 3,8–4,6 h | 50k–51k | ~330 MB |
+| 100k | 7,5–9,2 h | 100k–102k | ~660 MB |
+| 250k | 18,8–23 h | 250k–255k | ~1,7 GB |
+| 600k | 45–55 h | 600k–612k | ~4 GB |
+
+Son rangos de planificación, no garantías. Retries, cambios de densidad, payloads históricos, mantenimiento y límites de BDNS pueden aumentarlos significativamente.

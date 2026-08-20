@@ -22,7 +22,7 @@ from opportunity_ingestion.db.session import create_db_engine, session_factory
 from opportunity_ingestion.repositories.grant_calls import upsert_core_grant_call
 from opportunity_ingestion.repositories.raw_grant_calls import canonical_payload_hash, upsert_raw_grant_call
 from opportunity_ingestion.backfill.ops import record_failure, release_window_lock, try_acquire_window_lock
-from opportunity_ingestion.backfill.runner import BackfillResult, _retry_run_failures, _update_page_checkpoint
+from opportunity_ingestion.backfill.runner import BackfillInterrupted, BackfillResult, _retry_run_failures, _update_page_checkpoint
 from opportunity_ingestion.transformers.grant_call import raw_payload, transform_call
 from ..test_data_core import detail
 
@@ -137,6 +137,19 @@ def test_checkpoint_update_and_failure_retry(test_engine):
         assert run.last_page == 4
         assert run.fetched == 2
         assert failure.resolved_at is not None
+
+
+def test_retry_failure_consumes_max_records_budget(test_engine):
+    with session_factory(test_engine)() as session:
+        with session.begin():
+            run = IngestionRun(source="bdns", date_from=date(2024, 3, 1), date_to=date(2024, 3, 31), status="running")
+            session.add(run)
+            session.flush()
+            record_failure(session, run_id=run.id, bdns_code="retry-budget-test", stage="detail", error=ValueError("temporary"))
+            run_id = run.id
+    result = BackfillResult(processed=1)
+    with pytest.raises(BackfillInterrupted, match="max_records"):
+        _retry_run_failures(test_engine, run_id, SimpleNamespace(get_call_detail=lambda _code: detail()), result=result, max_records=1)
 
 
 def test_postgres_fund_catalog_does_not_require_code(test_engine):

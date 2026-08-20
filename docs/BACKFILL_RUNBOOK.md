@@ -54,6 +54,7 @@ Para limitar una sesión completa, combinar el plan con un guardrail de registro
 ```
 
 `--max-records` cuenta cada detalle intentado, incluidos `unchanged` y fallos.
+Los reintentos activados con `--retry-failed` también consumen presupuesto.
 Es aproximado a nivel de ejecución: si el límite se alcanza dentro de una página,
 esa página no se confirma y puede repetirse al reanudar. RAW/CORE son idempotentes.
 

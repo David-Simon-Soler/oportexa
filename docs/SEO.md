@@ -18,4 +18,10 @@ Combinaciones profundas, filtros arbitrarios y páginas con pocos registros: no 
 
 Una página programática sólo podrá indexarse si aporta utilidad real, procedencia visible y suficiente densidad. No se fijan thresholds definitivos hasta observar más periodos y calidad histórica; `--min-grants` es un parámetro de informe, no una regla SEO de producción.
 
+## Modelo conceptual de indexación
+
+**INDEXABLE** cuando existe inventario suficiente y actual, una intención de búsqueda clara, contenido estructurado diferencial —fechas, organismo, presupuesto, beneficiarios y fuente— y una política de actualización verificable. Las fichas individuales pueden indexarse si la convocatoria conserva información útil y procedencia oficial.
+
+**NOINDEX** para combinaciones con inventario escaso, datos obsoletos, filtros arbitrarios, páginas sin contenido diferencial, resultados temporales o taxonomías cuya calidad aún no sea estable. Un umbral numérico ayuda a detectar oportunidades, pero no sustituye la utilidad real.
+
 No se crearán combinaciones programáticas indiscriminadas ni thin content. La generación dependerá de utilidad real, calidad, frescura, indexabilidad y capacidad de mantener la página actualizada. Se definirán posteriormente metadatos, enlazado interno, datos estructurados y estrategia de canonicalización.

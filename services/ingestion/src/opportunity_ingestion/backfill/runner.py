@@ -80,11 +80,12 @@ def _update_page_checkpoint(engine, run_id: int, *, page: int, fetched: int, suc
             )
 
 
-def _retry_run_failures(engine, run_id: int, client: BdnsClient, *, result: BackfillResult) -> int:
+def _retry_run_failures(engine, run_id: int, client: BdnsClient, *, result: BackfillResult, max_records: int | None = None) -> int:
     with session_factory(engine)() as session:
         failures = unresolved_failures(session, run_id)
     resolved = 0
     for failure in failures:
+        _consume_record_budget(result, max_records)
         try:
             outcome = ingest_one(factory=session_factory(engine), client=client, bdns_code=failure.bdns_code)
         except Exception as error:  # individual failures must not stop the window
@@ -282,7 +283,7 @@ def _run_window(
                     break
             _raise_if_interrupted(interrupted_state)
             if retry_failed:
-                resolved = _retry_run_failures(engine, run_id, client, result=result)
+                resolved = _retry_run_failures(engine, run_id, client, result=result, max_records=max_records)
                 if resolved:
                     logger.info("failures_retried run=%s resolved=%s", run_id, resolved)
         with session_factory(engine)() as session:
