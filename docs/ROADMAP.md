@@ -8,6 +8,14 @@ PostgreSQL local aislado, migraciones Alembic, ingestión persistente incrementa
 
 Base web Next.js con lectura server-side de PostgreSQL, catálogo, detalle, regiones, metadata y sitemap completada. Incluye lint, tests unitarios, integración PostgreSQL y build. Limitación: no existe validación visual automatizada porque `agent-browser` no está disponible en el entorno; se mantiene validación estructural y CSS responsive.
 
+## V0.2.5 — Recent Data Foundation — COMPLETE
+
+Motor de backfill staged con streaming, checkpoints, resume, idempotencia, advisory locks, failure tracking, retries, SIGINT seguro y `--max-records`. Se validaron migraciones desde cero, campañas limitadas de 2026, cobertura exacta por códigos BDNS, freshness OPS, calidad RAW/CORE y regresión web. El dataset local queda en 6.273 convocatorias, pero la cobertura 2026 sigue parcial salvo agosto; no equivale a cobertura nacional completa.
+
+## V0.3 — Product Discovery — NEXT
+
+Handoff preparado en `docs/V0.3_PRODUCT_DISCOVERY.md`. Esta fase queda limitada a convertir CORE en una experiencia pública útil de búsqueda, filtros, resultados, fichas y navegación SEO-first. No incluye todavía usuarios, auth, alertas, IA, pagos, publicidad ni API pública.
+
 ## V1 — Personalization
 
 Cuenta, perfil, favoritos, matching y alertas.
