@@ -5,3 +5,8 @@ export function slugify(value: string): string {
 export function grantSlug(code: string, title: string): string {
   return `${code}-${slugify(title || "convocatoria")}`;
 }
+
+export function taxonomySlug(label: string, key: string, collision = false): string {
+  const base = slugify(label) || "taxonomy";
+  return collision ? `${base}--${slugify(key) || "key"}` : base;
+}

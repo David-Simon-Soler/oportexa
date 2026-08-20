@@ -1,0 +1,13 @@
+import Link from "next/link";
+import { GrantCard } from "./grant-card";
+import { Pagination } from "./pagination";
+import { SiteHeader } from "./site-header";
+import type { SearchResult, TaxonomySummary } from "../lib/db/types";
+
+export function TaxonomyIndex({ title, description, basePath, items }: { title: string; description: string; basePath: string; items: TaxonomySummary[] }) {
+  return <><SiteHeader/><main className="mx-auto max-w-6xl px-4 py-10 sm:px-6"><nav aria-label="Migas de pan" className="text-sm text-slate-500"><Link href="/">Inicio</Link> <span aria-hidden="true">→</span> <Link href="/subvenciones">Subvenciones</Link></nav><h1 className="mt-5 text-3xl font-semibold">{title}</h1><p className="mt-3 text-slate-600">{description}</p>{items.length ? <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{items.map((item) => <Link key={item.key} href={`${basePath}/${item.slug}`} className="rounded-xl border border-slate-200 bg-white p-5 hover:border-amber-400"><span className="font-medium">{item.label}</span><span className="mt-2 block text-sm text-slate-500">{item.totalGrants} convocatorias · {item.openGrants} abiertas</span></Link>)}</div> : <p className="mt-8 rounded-xl border border-dashed border-slate-300 p-8 text-slate-600">No hay datos disponibles en el catálogo local.</p>}</main></>;
+}
+
+export function TaxonomyDetail({ entity, sectionLabel, indexPath, result, query }: { entity: TaxonomySummary; sectionLabel: string; indexPath: string; result: SearchResult; query: URLSearchParams }) {
+  return <><SiteHeader/><main className="mx-auto max-w-6xl px-4 py-10 sm:px-6"><nav aria-label="Migas de pan" className="text-sm text-slate-500"><Link href="/">Inicio</Link> <span aria-hidden="true">→</span> <Link href="/subvenciones">Subvenciones</Link> <span aria-hidden="true">→</span> <Link href={indexPath}>{sectionLabel}</Link> <span aria-hidden="true">→</span> <span aria-current="page">{entity.label}</span></nav><p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">{sectionLabel}</p><h1 className="mt-2 text-3xl font-semibold">Subvenciones de {entity.label}</h1><p className="mt-3 text-slate-600">{entity.totalGrants} convocatorias en el dataset local · {entity.openGrants} indicadas como abiertas.</p><section className="mt-8 grid gap-4">{result.items.length ? result.items.map((grant) => <GrantCard grant={grant} key={grant.bdnsCode}/>) : <p className="rounded-xl border border-dashed border-slate-300 p-8 text-slate-600">No hemos encontrado resultados en los datos disponibles.</p>}</section><div className="mt-8"><Pagination page={result.page} total={result.total} pageSize={result.pageSize} query={query}/></div></main></>;
+}

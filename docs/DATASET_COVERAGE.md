@@ -49,10 +49,14 @@ La siguiente tabla compara códigos obtenidos del listado BDNS para el rango con
 
 - Agosto 2026: ventanas del 1–21 de agosto `completed`, última confirmación el 19 de agosto de 2026.
 - Julio 2026, 1–7: `completed`, última confirmación el 19 de agosto de 2026.
-- Julio 2026, 8–14: `interrupted` por `--max-records=1000`, última confirmación el 20 de agosto de 2026, reanudable.
+- Julio 2026, 8–14: run 13, `interrupted`, `last_page=9`, con 1.000 registros fetched/succeeded y 0 failed. La interrupción fue controlada por `--max-records=1000`; el run es reanudable, pero queda deliberadamente pausado hasta retomar la cobertura de julio.
 - Enero–junio 2026: no revalidados por campaña de detalles en esta sesión.
 
 La freshness se obtiene de `ops.ingestion_runs.completed_at` y `last_page`; no representa una fecha oficial de modificación BDNS.
+
+### Estado operacional del run 13
+
+El run 13 cubre el rango inclusivo `2026-07-08`–`2026-07-14`. Su estado actual es `interrupted` y su último checkpoint completamente confirmado es `last_page=9`. No tiene fallos activos (`active ingestion_failures=0`) y las comprobaciones posteriores no muestran duplicados, huérfanos ni corrupción en RAW/CORE. Por tanto, es un run reanudable, no un fallo de integridad. No se reanuda en este handoff: queda pausado intencionadamente hasta continuar la cobertura de julio con el procedimiento documentado en `docs/BACKFILL_RUNBOOK.md`.
 
 ## Cobertura territorial y sectorial
 

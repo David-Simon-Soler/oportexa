@@ -12,6 +12,6 @@ export function formatDate(value: string | null): string {
 }
 
 export function statusLabel(isOpen: boolean | null, endDate: string | null): string {
-  if (isOpen) return endDate ? "Abierta" : "Convocatoria indicada como abierta; la fuente no especifica fecha de cierre.";
+  if (isOpen) return endDate ? "Abierta según BDNS" : "Abierta según BDNS · sin fecha límite indicada";
   return "Cerrada o sin estado confirmado";
 }
