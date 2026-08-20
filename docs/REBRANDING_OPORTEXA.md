@@ -36,8 +36,20 @@ No se introducen secretos ni se activan URLs absolutas de producción en desarro
 
 - Definir `SITE_URL=https://oportexa.com` en el entorno de producción.
 - Verificar canonical, sitemap y robots en el deploy real.
-- Revisar favicon y manifest si se incorpora identidad de marca explícita.
+- Verificar favicon, manifest y metadata social en el deploy real.
 - Configurar DNS y hosting fuera de esta tarea.
 - Verificar Search Console después de que exista producción.
 
-No se crea un logo complejo, isotipo, favicon especulativo ni integración con proveedores externos.
+## Assets y metadata de producción
+
+Completado en el checkpoint posterior:
+
+- Isotipo vectorial OX GEO en `apps/web/public/logo-mark.svg`.
+- Favicon de navegador basado solo en el isotipo.
+- Iconos de aplicación 192×192, 512×512 y Apple Touch Icon.
+- Manifest básico de Oportexa, sin service worker.
+- Imagen Open Graph 1200×630 reutilizada para Twitter.
+- `themeColor`, `icons`, `manifest`, Open Graph y Twitter metadata.
+- Integración mínima del isotipo en el header, conservando el wordmark HTML.
+
+Pendiente fuera de este checkpoint: configuración real de dominio, hosting y deploy.

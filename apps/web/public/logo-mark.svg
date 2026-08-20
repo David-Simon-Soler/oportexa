@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Oportexa OX GEO</title>
+  <desc id="desc">Isotipo geométrico que combina una O abierta y una X.</desc>
+  <path d="M41.5 103.1a46 46 0 1 1 45 0" fill="none" stroke="#0F1412" stroke-width="14" stroke-linecap="butt"/>
+  <path d="m43 43 42 42M85 43 43 85" fill="none" stroke="#1F5D46" stroke-width="12" stroke-linecap="square"/>
+</svg>
