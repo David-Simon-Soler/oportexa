@@ -85,3 +85,11 @@ Con el ritmo staged observado, aproximadamente 3,4–3,7 grants/s, y el tamaño 
 | 600k | 45–55 h | 600k–612k | ~4 GB |
 
 Son rangos de planificación, no garantías. Retries, cambios de densidad, payloads históricos, mantenimiento y límites de BDNS pueden aumentarlos significativamente.
+
+## Medición V0.4 — Data Launch Readiness
+
+El 20 de agosto de 2026 el dataset local quedó en 6.674 RAW/CORE, con 6.674 códigos BDNS únicos. La base completa ocupa aproximadamente 40 MB; RAW ocupa 23 MB y `core.grant_calls` aproximadamente 5,3 MB incluyendo índices.
+
+La reanudación del run 13 procesó 392 detalles en 108,5 s: 392 nuevos, 0 fallos y aproximadamente 396 requests. La revalidación del run 14 procesó 462 detalles en 129,2 s: 443 unchanged, 9 nuevos, 10 updated y 0 fallos, aproximadamente 467 requests. Son observaciones de ventanas concretas, no garantías de throughput.
+
+Con el tamaño observado de 40 MB para 6.674 convocatorias, una proyección lineal orientativa de base completa sería: 10k ≈ 60 MB; 25k ≈ 150 MB; 50k ≈ 300 MB; 100k ≈ 600 MB; 250k ≈ 1,5 GB; 600k ≈ 3,6 GB. El tamaño real dependerá de payloads, TOAST, índices, asociaciones y distribución histórica.

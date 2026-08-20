@@ -74,6 +74,16 @@ Reintentar fallos pendientes:
   --window monthly --resume --retry-failed
 ```
 
+Revalidar una ventana ya completada como una nueva ejecución controlada:
+
+```bash
+.venv/bin/python scripts/backfill_calls.py \
+  --date-from 2026-08-15 --date-to 2026-08-21 \
+  --window weekly --max-windows 1 --max-records 500 --page-size 100
+```
+
+La revalidación debe mostrar principalmente `unchanged`. Los valores `new` o `updated` son posibles si BDNS cambió desde la observación anterior. Comprobar siempre OPS, calidad y duplicados después.
+
 Detención: usar `Ctrl+C` una vez y esperar a que el proceso marque el run como `interrupted`. No matar el contenedor ni borrar checkpoints durante una página activa.
 
 ## Inspección y diagnóstico

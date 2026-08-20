@@ -6,23 +6,23 @@ Este informe describe el estado de desarrollo tras la campaña staged de julio�
 
 ## Qué tenemos
 
-- 6.273 convocatorias RAW y CORE.
-- 6.273 códigos BDNS únicos.
-- 1.146 organizations.
+- 6.674 convocatorias RAW y CORE.
+- 6.674 códigos BDNS únicos.
+- 1.195 organizations.
 - 255 sectors.
 - 99 regions.
 - 4 beneficiary types.
 - 11 funds.
 - Presupuesto conocido en el 100% del CORE actual.
-- 350 convocatorias abiertas, 5,58% del CORE.
+- 384 convocatorias abiertas, 5,75% del CORE.
 
 ## Cobertura temporal
 
 El dataset combina la carga inicial, pruebas históricas y bloques recientes. La densidad local por mes muestra especialmente:
 
 - 2026-01: 1.220.
-- 2026-07: 342.
-- 2026-08: 177.
+- 2026-07: 2.800.
+- 2026-08: 2.475.
 - 2025-01: 489.
 - 2025-12: 219.
 
@@ -40,23 +40,23 @@ La siguiente tabla compara códigos obtenidos del listado BDNS para el rango con
 | 2026-04 | 6.311 | 0 | 0,00% | PARTIAL |
 | 2026-05 | 6.217 | 0 | 0,00% | PARTIAL |
 | 2026-06 | 6.783 | 0 | 0,00% | PARTIAL |
-| 2026-07 | 6.541 | 2.408 | 36,81% | PARTIAL |
-| 2026-08 | 2.475 | 2.475 | 100,00% | COMPLETE |
+| 2026-07 | 6.541 | 2.800 | 42,81% | PARTIAL |
+| 2026-08 | 2.484 | 2.484 | 100,00% | COMPLETE |
 
 `COMPLETE` sólo se asigna cuando todos los códigos listados fueron comparados y están en CORE. Los ceros de enero–junio son ceros de matching bajo este filtro de listado, no una afirmación de que CORE no contenga convocatorias con fechas de aplicación en esos meses.
 
 ## Freshness
 
-- Agosto 2026: ventanas del 1–21 de agosto `completed`, última confirmación el 19 de agosto de 2026.
-- Julio 2026, 1–7: `completed`, última confirmación el 19 de agosto de 2026.
-- Julio 2026, 8–14: run 13, `interrupted`, `last_page=9`, con 1.000 registros fetched/succeeded y 0 failed. La interrupción fue controlada por `--max-records=1000`; el run es reanudable, pero queda deliberadamente pausado hasta retomar la cobertura de julio.
+- Agosto 2026: ventanas del 1–21 de agosto `completed`; la revalidación del 15–21 registró 443 unchanged, 9 new y 10 updated.
+- Julio 2026, 1–7: `completed`.
+- Julio 2026, 8–14: run 13, ahora `completed`, `last_page=13`, con 1.392 registros fetched/succeeded y 0 failed tras reanudar las 392 páginas restantes.
 - Enero–junio 2026: no revalidados por campaña de detalles en esta sesión.
 
 La freshness se obtiene de `ops.ingestion_runs.completed_at` y `last_page`; no representa una fecha oficial de modificación BDNS.
 
 ### Estado operacional del run 13
 
-El run 13 cubre el rango inclusivo `2026-07-08`–`2026-07-14`. Su estado actual es `interrupted` y su último checkpoint completamente confirmado es `last_page=9`. No tiene fallos activos (`active ingestion_failures=0`) y las comprobaciones posteriores no muestran duplicados, huérfanos ni corrupción en RAW/CORE. Por tanto, es un run reanudable, no un fallo de integridad. No se reanuda en este handoff: queda pausado intencionadamente hasta continuar la cobertura de julio con el procedimiento documentado en `docs/BACKFILL_RUNBOOK.md`.
+El run 13 cubre el rango inclusivo `2026-07-08`–`2026-07-14`. Comenzó `interrupted` en `last_page=9` tras el límite controlado de 1.000 registros; se reanudó con `--max-records=500` y terminó `completed` en `last_page=13`, con 1.392 éxitos y 0 fallos. No hubo duplicados, huérfanos ni corrupción en RAW/CORE.
 
 ## Cobertura territorial y sectorial
 
@@ -79,6 +79,6 @@ No se observaron convocatorias abiertas que cierren en los próximos 7, 14 o 30 
 
 ## Launch data gate
 
-`LAUNCH-DATA-READY: NOT READY`.
+`LAUNCH-DATA-READY: READY WITH DOCUMENTED LIMITATIONS`.
 
-Para alcanzarlo se requieren cobertura reciente completa, revalidación repetible, cero duplicados y huérfanos, error rate aceptable, freshness conocida y un inventario abierto suficiente por regiones y sectores relevantes. Este documento no autoriza publicar ni desplegar.
+La integridad y la revalidación controlada están demostradas, pero la cobertura 2026 sigue incompleta en enero-junio y julio. Este estado no autoriza publicar ni desplegar automáticamente: exige mostrar claramente las limitaciones de cobertura.

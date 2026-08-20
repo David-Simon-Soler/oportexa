@@ -16,6 +16,10 @@ Motor de backfill staged con streaming, checkpoints, resume, idempotencia, advis
 
 Experiencia pública de búsqueda, filtros, resultados, fichas, taxonomías, estados, accesibilidad y navegación SEO-first completada. La dirección visual, el UX polish y la documentación de diseño están cerrados. No incluye usuarios, auth, alertas, IA, pagos, publicidad ni API pública.
 
+## V0.4 — Data Launch Readiness — READY WITH DOCUMENTED LIMITATIONS
+
+La integridad RAW/CORE, la reanudación del run 13, la revalidación controlada, la freshness local y las métricas de cobertura 2026 están auditadas. La cobertura reciente continúa parcial: enero-junio no tiene matching en la auditoría de listados y julio sólo está parcialmente cubierto. No se marca como cobertura nacional completa ni se habilita deploy automáticamente.
+
 ## V1 — Personalization
 
 Cuenta, perfil, favoritos, matching y alertas.
