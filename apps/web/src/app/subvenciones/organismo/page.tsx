@@ -2,5 +2,5 @@ import type { Metadata } from "next";
 import { TaxonomyIndex } from "../../../components/taxonomy-pages";
 import { getOrganizations } from "../../../lib/db/regions";
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Ayudas y subvenciones por organismo", description: "Explora convocatorias por organismo en el catálogo local de Opportunity Intel.", alternates: { canonical: "/subvenciones/organismo" } };
+export const metadata: Metadata = { title: "Ayudas y subvenciones por organismo", description: "Explora convocatorias por organismo en los datos actualmente incorporados por Oportexa.", alternates: { canonical: "/subvenciones/organismo" } };
 export default async function OrganizationsPage() { return <TaxonomyIndex title="Convocatorias por organismo" description="Explora convocatorias publicadas por distintos organismos públicos." basePath="/subvenciones/organismo" items={await getOrganizations()}/>; }

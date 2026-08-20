@@ -1,6 +1,6 @@
-# Opportunity Intel
+# Oportexa
 
-Opportunity Intel es el nombre provisional de una futura plataforma gratuita para descubrir, entender y analizar oportunidades públicas en España. El proyecto comienza con convocatorias de ayudas y subvenciones publicadas en la BDNS/SNPSAP (Base de Datos Nacional de Subvenciones / Sistema Nacional de Publicidad de Subvenciones y Ayudas Públicas).
+Oportexa es una plataforma gratuita para descubrir, entender y verificar oportunidades públicas en España. El proyecto comienza con convocatorias de ayudas y subvenciones publicadas en la BDNS/SNPSAP (Base de Datos Nacional de Subvenciones / Sistema Nacional de Publicidad de Subvenciones y Ayudas Públicas). El dominio previsto es `oportexa.com`.
 
 ## Problema y propuesta
 
@@ -12,7 +12,7 @@ Un servicio Python ingerirá datos oficiales, conservará la respuesta RAW y su 
 
 ## Estado actual
 
-V0.1 Data Core está completado: cliente BDNS, modelos RAW, PostgreSQL/Alembic, transformación RAW → CORE, ETL incremental, validación y 50 convocatorias de comprobación. V0.2 Discovery está en progreso con una base Next.js server-side, catálogo, fichas, regiones y SEO técnico inicial. No hay usuarios, autenticación, IA, matching, pagos, email ni despliegue.
+V0.1 Data Core, V0.2 Discovery, V0.2.5 Recent Data Foundation y V0.3 Product Discovery están completados. V0.4 Data Launch Readiness está preparado con limitaciones documentadas de cobertura. No hay usuarios, autenticación, IA, matching, pagos, email ni despliegue.
 
 ## Organización
 
@@ -33,6 +33,6 @@ V0.1 Data Core está completado: cliente BDNS, modelos RAW, PostgreSQL/Alembic, 
 
 ## Roadmap resumido
 
-V0.1 Data Core → V0.2 Discovery → V1 Personalization → V2 Intelligence → V3 Expansion → V4 Platform. El detalle está en [`docs/ROADMAP.md`](docs/ROADMAP.md).
+V0.1 Data Core → V0.2 Discovery → V0.2.5 Recent Data Foundation → V0.3 Product Discovery → V0.4 Data Launch Readiness → V1 Personalization → V2 Intelligence → V3 Expansion → V4 Platform. El detalle está en [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
-El nombre “Opportunity Intel” es provisional y se revisará antes del lanzamiento público.
+El nombre público actual es “Oportexa”. El identificador técnico del repositorio continúa siendo `opportunity-intel` por trazabilidad y compatibilidad local.

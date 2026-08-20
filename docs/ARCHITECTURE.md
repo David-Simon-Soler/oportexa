@@ -31,7 +31,7 @@ El ETL no consulta PostgreSQL desde el cliente HTTP: separa HTTP → modelo RAW 
 
 La estrategia incremental inicial seguirá la guía oficial: consultar por ventanas de `fechaDesde`/`fechaHasta` usando el formato documentado `DD/MM/YYYY`, obtener primero los códigos BDNS y después el detalle, y revalidar ventanas recientes semanal, mensual y anualmente. El cliente debe respetar 10 GET por IP/segundo, no usar concurrencia agresiva y aplicar pausas entre llamadas. La semántica exacta de inclusión de fechas queda pendiente de verificación.
 
-Las consultas de usuarios **no deberán depender directamente de la API de BDNS**: Opportunity Intel mantendrá su propia capa de datos para consistencia, rendimiento, histórico, auditoría y enriquecimiento controlado.
+Las consultas de usuarios **no deberán depender directamente de la API de BDNS**: Oportexa mantendrá su propia capa de datos para consistencia, rendimiento, histórico, auditoría y enriquecimiento controlado.
 
 ## Separación de datos
 

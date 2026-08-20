@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Mantener actualizada la capa local de Opportunity Intel mediante el motor BDNS existente, sin consultar BDNS directamente desde la web y sin convertir timestamps locales en fechas oficiales.
+Mantener actualizada la capa local de Oportexa mediante el motor BDNS existente, sin consultar BDNS directamente desde la web y sin convertir timestamps locales en fechas oficiales.
 
 ## Cadencias operativas previstas
 
@@ -29,7 +29,7 @@ Sólo ejecutar por una razón documentada. Requiere preflight, estimación de re
 - `last_seen_at`: última observación local de la convocatoria.
 - `ops.ingestion_runs.completed_at`: momento en que terminó una ventana operacional.
 
-La interfaz puede hablar de “Última observación por Opportunity Intel”. Nunca debe presentar `last_seen_at` o `completed_at` como “última actualización de BDNS”.
+La interfaz puede hablar de “Última observación por Oportexa”. Nunca debe presentar `last_seen_at` o `completed_at` como “última actualización de BDNS”.
 
 ## Procedimiento seguro
 

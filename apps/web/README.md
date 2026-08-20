@@ -1,6 +1,6 @@
 # Web Discovery
 
-Aplicación Next.js de la primera superficie pública de Opportunity Intel. En V0.2 usa App Router, TypeScript estricto, Server Components y una DAL server-only basada en `pg`.
+Aplicación Next.js de la primera superficie pública de Oportexa. En V0.3 usa App Router, TypeScript estricto, Server Components y una DAL server-only basada en `pg`.
 
 ## Desarrollo local
 
