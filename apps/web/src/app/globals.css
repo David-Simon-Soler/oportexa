@@ -1,5 +1,35 @@
 @import "tailwindcss";
-:root { color-scheme: light; }
+
+:root {
+  color-scheme: light;
+  --background: #f6f7f3;
+  --surface: #ffffff;
+  --foreground: #17201d;
+  --muted: #66716c;
+  --subtle: #68756e;
+  --border: #dfe5e0;
+  --border-strong: #cbd5cf;
+  --accent: #176b52;
+  --accent-hover: #11513f;
+  --accent-soft: #e8f2ed;
+  --open: #176b52;
+  --warning: #a96d21;
+}
+
 * { box-sizing: border-box; }
-body { margin: 0; }
+html { background: var(--background); }
+body { margin: 0; background: var(--background); color: var(--foreground); font-family: Arial, Helvetica, sans-serif; }
 a { text-underline-offset: 3px; }
+button, input, select { font: inherit; }
+
+.container-shell { width: min(100% - 2rem, 78rem); margin-inline: auto; }
+.eyebrow { color: var(--accent); font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.display-title { font-size: clamp(2.6rem, 7vw, 5.5rem); line-height: .98; letter-spacing: -.055em; font-weight: 650; }
+.section-title { font-size: clamp(1.65rem, 3vw, 2.25rem); line-height: 1.06; letter-spacing: -.035em; font-weight: 650; }
+.body-copy { color: var(--muted); line-height: 1.7; }
+.panel { border: 1px solid var(--border); background: var(--surface); border-radius: 1rem; }
+.focus-ring:focus-visible, a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #9ad3bc; outline-offset: 3px; }
+
+@media (min-width: 48rem) { .container-shell { width: min(100% - 3rem, 78rem); } }
+@media (min-width: 64rem) { .container-shell { width: min(100% - 4rem, 78rem); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }

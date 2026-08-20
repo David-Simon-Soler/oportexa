@@ -1,1 +1,9 @@
-export function SearchForm({ initialValue = "" }: { initialValue?: string }) { return <form action="/subvenciones" className="flex w-full flex-col gap-3 sm:flex-row"><label htmlFor="q" className="sr-only">Buscar convocatorias</label><input id="q" name="q" defaultValue={initialValue} placeholder="Busca por título, organismo o finalidad" className="min-h-12 flex-1 rounded-lg border border-slate-300 bg-white px-4 text-slate-900 outline-none ring-amber-500 placeholder:text-slate-400 focus:ring-2"/><button className="min-h-12 rounded-lg bg-slate-950 px-6 font-medium text-white hover:bg-slate-800" type="submit">Buscar oportunidades</button></form>; }
+export function SearchForm({ initialValue = "", compact = false }: { initialValue?: string; compact?: boolean }) {
+  return <form action="/subvenciones" className={`flex w-full gap-2 ${compact ? "flex-col sm:flex-row" : "flex-col sm:flex-row"}`}>
+    <label htmlFor={compact ? "catalog-search" : "hero-search"} className="sr-only">Buscar oportunidades públicas</label>
+    <input id={compact ? "catalog-search" : "hero-search"} name="q" defaultValue={initialValue} placeholder="Buscar digitalización, empleo, energía..." className={`focus-ring min-w-0 flex-1 border border-[var(--border-strong)] bg-white px-4 text-[var(--foreground)] shadow-[0_1px_2px_rgba(23,32,29,.04)] placeholder:text-[var(--subtle)] ${compact ? "min-h-11 rounded-lg text-sm" : "min-h-14 rounded-xl text-base sm:min-h-16 sm:px-5 sm:text-lg"}`} />
+    <button className={`focus-ring shrink-0 bg-[var(--accent)] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] ${compact ? "min-h-11 rounded-lg px-5 text-sm" : "min-h-14 rounded-xl px-6 sm:min-h-16"}`} type="submit">Buscar oportunidades</button>
+  </form>;
+}
+
+export function SearchHero() { return <SearchForm/>; }

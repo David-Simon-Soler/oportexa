@@ -6,9 +6,9 @@ export function formatMoney(value: string | number | null): string {
 }
 
 export function formatDate(value: string | null): string {
-  if (!value) return "Fecha no especificada";
+  if (!value) return "Fecha no indicada";
   const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? "Fecha no especificada" : new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" }).format(date);
+  return Number.isNaN(date.getTime()) ? "Fecha no indicada" : new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" }).format(date);
 }
 
 export function statusLabel(isOpen: boolean | null, endDate: string | null): string {

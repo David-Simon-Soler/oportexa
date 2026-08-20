@@ -69,7 +69,7 @@ export type SearchFilters = {
 export type SearchResult = { items: GrantSummary[]; total: number; page: number; pageSize: number };
 
 export type HomepageData = {
-  stats: { totalGrants: number; openGrants: number };
+  stats: { totalGrants: number; openGrants: number; sectorCount: number; regionCount: number };
   topSectors: SectorSummary[];
   topRegions: RegionSummary[];
   topBeneficiaries: BeneficiarySummary[];
