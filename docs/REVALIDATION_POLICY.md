@@ -10,6 +10,8 @@ Mantener actualizada la capa local de Oportexa mediante el motor BDNS existente,
 
 Revisar novedades recientes con ventanas pequeñas y explícitas. Ejecutar con `--dry-run`, `--max-windows` y `--max-records` antes de escribir. Prioridad: detectar convocatorias nuevas.
 
+En producción, GitHub Actions ejecuta diariamente `.github/workflows/daily-revalidation.yml` a las 06:15 UTC. Revalida los últimos tres días con ventanas `daily`, `--max-records 500` y `--retry-failed`, usando exclusivamente el secreto `OPORTEXA_INGEST_DATABASE_URL`, cuya URL debe pertenecer al rol `oportexa_ingest`. El workflow también ejecuta `data_quality_report.py` y `quality_gate.py`.
+
 ### WEEKLY
 
 Revalidar ventanas recientes para detectar cambios en estado, presupuesto, fechas, descripción o relaciones. La ejecución es idempotente: los registros sin cambios deben quedar como `unchanged`.
@@ -30,6 +32,10 @@ Sólo ejecutar por una razón documentada. Requiere preflight, estimación de re
 - `ops.ingestion_runs.completed_at`: momento en que terminó una ventana operacional.
 
 La interfaz puede hablar de “Última observación por Oportexa”. Nunca debe presentar `last_seen_at` o `completed_at` como “última actualización de BDNS”.
+
+## Histórico y ejecución manual
+
+El workflow diario no ejecuta backfills históricos. Toda carga histórica debe lanzarse manualmente con `scripts/backfill_calls.py`, tras un dry-run y con `--max-windows` y/o `--max-records` explícitos, siguiendo `docs/BACKFILL_RUNBOOK.md`. `workflow_dispatch` permite repetir la misma revalidación corta bajo supervisión; no convierte el workflow en un lanzador de rangos históricos.
 
 ## Procedimiento seguro
 

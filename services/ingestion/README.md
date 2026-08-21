@@ -72,6 +72,10 @@ python scripts/data_quality_report.py
 
 Los resultados reflejan sólo el dataset local ingerido y no son necesariamente representativos de toda la BDNS.
 
+## Revalidación automática en producción
+
+GitHub Actions ejecuta `.github/workflows/daily-revalidation.yml` diariamente. El flujo consulta BDNS, revalida una ventana corta y escribe en Neon usando únicamente el secreto `OPORTEXA_INGEST_DATABASE_URL`; la aplicación web consulta después la capa `core` con su conexión de lectura. A continuación ejecuta el informe de calidad, el quality gate y una inspección de fallos. No hace backfills históricos ni modifica DNS, Vercel o secretos.
+
 ## Tests
 
 ```bash

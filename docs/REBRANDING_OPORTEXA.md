@@ -4,7 +4,7 @@
 
 - Nombre público anterior: Opportunity Intel.
 - Nombre público nuevo: Oportexa.
-- Dominio previsto: `https://oportexa.com`.
+- Dominio principal de producción: `https://www.oportexa.com`.
 
 Oportexa comunica una plataforma para descubrir, entender y verificar ayudas y subvenciones públicas. La dirección visual Editorial Data Intelligence, las rutas y la arquitectura no cambian.
 
@@ -27,14 +27,14 @@ Se conserva `opportunity-intel` en el nombre del repositorio, rutas de filesyste
 La aplicación ya usa `SITE_URL` como configuración central para `metadataBase`, sitemap y robots. Desarrollo mantiene el fallback `http://localhost:3000`; producción deberá definir:
 
 ```text
-SITE_URL=https://oportexa.com
+SITE_URL=https://www.oportexa.com
 ```
 
 No se introducen secretos ni se activan URLs absolutas de producción en desarrollo.
 
 ## Pendiente antes del deploy
 
-- Definir `SITE_URL=https://oportexa.com` en el entorno de producción.
+- Definir `SITE_URL=https://www.oportexa.com` en el entorno de producción.
 - Verificar canonical, sitemap y robots en el deploy real.
 - Verificar favicon, manifest y metadata social en el deploy real.
 - Configurar DNS y hosting fuera de esta tarea.

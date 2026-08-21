@@ -35,4 +35,4 @@ V0.1 Data Core, V0.2 Discovery, V0.2.5 Recent Data Foundation y V0.3 Product Dis
 
 V0.1 Data Core → V0.2 Discovery → V0.2.5 Recent Data Foundation → V0.3 Product Discovery → V0.4 Data Launch Readiness → V1 Personalization → V2 Intelligence → V3 Expansion → V4 Platform. El detalle está en [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
-El nombre público actual es “Oportexa”. El identificador técnico del repositorio continúa siendo `opportunity-intel` por trazabilidad y compatibilidad local.
+El nombre público actual es “Oportexa” y el dominio principal de producción es `https://www.oportexa.com`; `https://oportexa.com` redirige al host principal. El identificador técnico del repositorio continúa siendo `opportunity-intel` por trazabilidad y compatibilidad local.

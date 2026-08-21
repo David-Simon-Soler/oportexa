@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { getSiteUrl } from "../lib/site";
 
-const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
+const siteUrl = getSiteUrl();
 
 export const viewport: Viewport = { themeColor: "#F6F6F3", colorScheme: "light" };
 

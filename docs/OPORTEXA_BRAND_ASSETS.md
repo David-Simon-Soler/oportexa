@@ -42,7 +42,7 @@ El isotipo del header es decorativo (`alt=""`, `aria-hidden="true"`). El enlace 
 
 ## URL
 
-La metadata usa `SITE_URL`. En producción debe ser `https://oportexa.com`; en desarrollo se conserva el fallback `http://localhost:3000`.
+La metadata usa `SITE_URL`. En producción debe ser `https://www.oportexa.com`; en desarrollo se conserva el fallback `http://localhost:3000`.
 
 ## Instrucciones futuras
 

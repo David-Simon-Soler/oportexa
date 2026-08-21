@@ -212,10 +212,10 @@ Nunca ejecutar migraciones en cada request ni implícitamente durante el arranqu
 
 ## 11. Dominio y TLS
 
-Dominio previsto: `oportexa.com`, adquirido en Piensa Solutions.
+Dominio de producción: `www.oportexa.com`, con `oportexa.com` redirigiendo al host principal.
 
-Canonical preferido: `https://oportexa.com`.
-`https://www.oportexa.com` debe redirigir a la raíz canónica.
+Canonical preferido: `https://www.oportexa.com`.
+`https://oportexa.com` debe redirigir al host principal.
 
 Los registros DNS concretos dependen del proveedor elegido y no se deben inventar ni aplicar todavía. Vercel y proveedores equivalentes gestionan certificados TLS; no se debe comprar un certificado separado.
 

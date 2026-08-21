@@ -6,10 +6,11 @@ import { SiteHeader } from "../../components/site-header";
 import { searchGrants } from "../../lib/db/grants";
 import { getBeneficiaryTypes, getRegions, getSectors } from "../../lib/db/regions";
 import { parseSearchParams } from "../../lib/db/query-params";
+import { hasQueryParams } from "../../lib/seo";
 export const dynamic = "force-dynamic";
 type Params = Promise<Record<string, string | string[] | undefined>>;
 function one(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] : value; }
-export async function generateMetadata({ searchParams }: { searchParams: Params }): Promise<Metadata> { const params = await searchParams; const hasQuery = Object.values(params).some((value) => Array.isArray(value) ? value.some(Boolean) : Boolean(value)); return { title: "Subvenciones y ayudas públicas", description: "Explora convocatorias públicas procedentes de la BDNS/SNPSAP.", alternates: { canonical: "/subvenciones" }, robots: hasQuery ? { index: false, follow: true } : undefined }; }
+export async function generateMetadata({ searchParams }: { searchParams: Params }): Promise<Metadata> { const params = await searchParams; return { title: "Subvenciones y ayudas públicas", description: "Explora convocatorias públicas procedentes de la BDNS/SNPSAP.", alternates: { canonical: "/subvenciones" }, robots: hasQueryParams(params) ? { index: false, follow: true } : undefined }; }
 
 export default async function GrantsPage({ searchParams }: { searchParams: Params }) {
   const params = await searchParams; const filters = parseSearchParams(params);

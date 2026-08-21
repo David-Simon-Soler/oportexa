@@ -21,7 +21,6 @@ function whereFor(filters: SearchFilters) {
   if (filters.sector) add("EXISTS (SELECT 1 FROM core.grant_call_sectors rel JOIN core.sectors x ON x.id = rel.sector_id WHERE rel.grant_call_id = g.id AND (x.code = ? OR x.description = ? OR x.source_key = ?))", [filters.sector, filters.sector, filters.sector]);
   if (filters.beneficiary) add("EXISTS (SELECT 1 FROM core.grant_call_beneficiary_types rel JOIN core.beneficiary_types x ON x.id = rel.beneficiary_type_id WHERE rel.grant_call_id = g.id AND (x.code = ? OR x.description = ? OR x.source_key = ?))", [filters.beneficiary, filters.beneficiary, filters.beneficiary]);
   if (filters.organization) add("EXISTS (SELECT 1 FROM core.grant_call_organizations rel JOIN core.organizations x ON x.id = rel.organization_id WHERE rel.grant_call_id = g.id AND x.source_key = ?)", [filters.organization]);
-  if (filters.organization) add("EXISTS (SELECT 1 FROM core.grant_call_organizations rel JOIN core.organizations x ON x.id = rel.organization_id WHERE rel.grant_call_id = g.id AND x.source_key = ?)", [filters.organization]);
   if (filters.status === "open") clauses.push("g.is_open IS TRUE");
   if (filters.minBudget !== undefined) add("g.total_budget >= ?", [filters.minBudget]);
   return { sql: clauses.length ? `WHERE ${clauses.join(" AND ")}` : "", values };
@@ -71,6 +70,11 @@ export async function getGrantByCode(code: string): Promise<GrantDetail | null> 
   const firstSeenAt = String(row.first_seen_at);
   const lastSeenAt = String(row.last_seen_at);
   return { ...summary, description: row.description as string | null, purposeDescription: row.purpose_description as string | null, regulatoryBasesDescription: row.regulatory_bases_description as string | null, regulatoryBasesUrl: row.regulatory_bases_url as string | null, electronicOfficeUrl: row.electronic_office_url as string | null, funds: (row.funds ?? []) as FundRef[], provenance: { source: "BDNS", sourceReceivedDate: row.detail_source_received_date as string | null, firstSeenAt, lastSeenAt }, firstSeenAt, lastSeenAt };
+}
+
+export async function getGrantSitemapEntries(): Promise<Array<{ bdnsCode: string; title: string | null; lastSeenAt: string | null }>> {
+  const result = await getPool().query("SELECT bdns_code, title, last_seen_at::text AS last_seen_at FROM core.grant_calls ORDER BY bdns_code");
+  return result.rows.map((row) => ({ bdnsCode: String(row.bdns_code), title: row.title as string | null, lastSeenAt: row.last_seen_at as string | null }));
 }
 
 export async function getGrantCodes(): Promise<string[]> { const result = await getPool().query("SELECT bdns_code FROM core.grant_calls ORDER BY bdns_code"); return result.rows.map((row) => String(row.bdns_code)); }

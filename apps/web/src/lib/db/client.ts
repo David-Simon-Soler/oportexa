@@ -5,6 +5,6 @@ let pool: Pool | undefined;
 
 export function getPool(): Pool {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL no está configurada en el servidor.");
-  pool ??= new Pool({ connectionString: process.env.DATABASE_URL, max: 5, application_name: "opportunity-intel-web" });
+  pool ??= new Pool({ connectionString: process.env.DATABASE_URL, max: 5, connectionTimeoutMillis: 5000, idleTimeoutMillis: 30000, application_name: "opportunity-intel-web" });
   return pool;
 }

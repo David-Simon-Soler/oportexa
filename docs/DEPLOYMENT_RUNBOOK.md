@@ -125,7 +125,7 @@ Usar Node.js compatible con Next.js 16.3.1. Configurar primero preview, ejecutar
 ### Web runtime
 
 ```text
-SITE_URL=https://oportexa.com
+SITE_URL=https://www.oportexa.com
 DATABASE_URL=<pooled-web-read-only-url>
 ```
 
@@ -152,10 +152,10 @@ DATABASE_URL=<direct-migration-url>
 
 Después de conocer el proveedor, añadir únicamente los registros oficiales que indique:
 
-- `oportexa.com` como dominio principal.
-- `www.oportexa.com` como alias/redirección.
+- `www.oportexa.com` como dominio principal.
+- `oportexa.com` como alias/redirección.
 
-Configurar `https://oportexa.com` como canonical y redirigir `www` a la raíz. Verificar certificado gestionado y renovación automática.
+Configurar `https://www.oportexa.com` como canonical y redirigir la raíz a `www`. Verificar certificado gestionado y renovación automática.
 
 ## 11. Smoke test de producción
 
