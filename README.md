@@ -1,38 +1,188 @@
 # Oportexa
 
-Oportexa es una plataforma gratuita para descubrir, entender y verificar oportunidades públicas en España. El proyecto comienza con convocatorias de ayudas y subvenciones publicadas en la BDNS/SNPSAP (Base de Datos Nacional de Subvenciones / Sistema Nacional de Publicidad de Subvenciones y Ayudas Públicas). El dominio previsto es `oportexa.com`.
+Oportexa es una plataforma web para descubrir y consultar convocatorias de ayudas y subvenciones públicas en España. Trabaja principalmente con información pública de la Base de Datos Nacional de Subvenciones y del Sistema Nacional de Publicidad de Subvenciones y Ayudas Públicas (BDNS/SNPSAP), y la organiza para hacerla más fácil de explorar y verificar.
 
-## Problema y propuesta
+🌐 Producción: <https://www.oportexa.com>
 
-La información pública de oportunidades está dispersa, tiene lenguaje técnico y cambia con el tiempo. La plataforma pretende convertir fuentes oficiales en información más descubrible, comprensible y trazable, sin presentarse como asesoría jurídica, fiscal ni administrativa.
+Oportexa no es un sitio oficial, no representa a la Administración Pública y no sustituye a las fuentes oficiales. Para requisitos, plazos y trámites debe consultarse siempre el organismo competente y la convocatoria original.
 
-## Arquitectura prevista
+## Qué permite hacer
 
-Un servicio Python ingerirá datos oficiales, conservará la respuesta RAW y su procedencia, validará y normalizará los registros en una capa propia sobre PostgreSQL. Una aplicación web futura en Next.js + TypeScript consultará esa capa local. Las consultas de usuarios no dependerán directamente de la API de BDNS.
+- Explorar convocatorias y subvenciones mediante búsqueda, filtros y ordenación.
+- Consultar fichas individuales con estado, fechas, presupuesto, organismo, taxonomías y procedencia.
+- Navegar por región, sector, organismo y tipo de beneficiario.
+- Identificar convocatorias marcadas como abiertas por BDNS.
+- Acceder a las bases reguladoras, sedes electrónicas y otras fuentes oficiales cuando están disponibles.
 
-## Estado actual
+La aplicación muestra la cobertura disponible en el dataset local; esa cobertura es parcial y no equivale al universo completo de BDNS.
 
-V0.1 Data Core, V0.2 Discovery, V0.2.5 Recent Data Foundation y V0.3 Product Discovery están completados. V0.4 Data Launch Readiness está preparado con limitaciones documentadas de cobertura. No hay usuarios, autenticación, IA, matching, pagos, email ni despliegue.
+## Arquitectura
 
-## Organización
+~~~mermaid
+flowchart TD
+    A[BDNS / SNPSAP] --> B[Servicio Python de ingesta]
+    B --> C[RAW JSONB + provenance]
+    C --> D[CORE normalizado]
+    D --> E[(PostgreSQL)]
+    E --> F[DAL server-only de Next.js]
+    F --> G[oportexa.com]
+~~~
 
-- `apps/web/`: aplicación Next.js de Discovery; consulta sólo `core` mediante DAL server-only.
-- `services/ingestion/`: espacio reservado para pipelines Python.
-- `packages/database/`: contrato y futura capa de acceso/migraciones de datos.
-- `docs/`: documentación de producto, arquitectura y operación.
-- `adr/`: decisiones arquitectónicas registradas.
+- **BDNS/SNPSAP**: fuente primaria de convocatorias públicas.
+- **Servicio Python**: cliente BDNS, ingesta incremental y backfill controlado, validación, transformación y persistencia.
+- **RAW**: conserva la respuesta recibida, hash, endpoint y timestamps de procedencia.
+- **CORE**: modelo normalizado de convocatorias, catálogos y relaciones N:M.
+- **OPS**: seguimiento de ejecuciones, checkpoints y fallos de ingesta.
+- **Web Next.js**: consulta únicamente la proyección pública de core mediante una DAL server-only. Las peticiones web no consultan BDNS en tiempo real.
+- **PostgreSQL**: persistencia de RAW, CORE y OPS.
 
-## Principios clave
+## Pipeline de datos
 
-1. La fuente oficial y su procedencia deben ser visibles y trazables.
-2. La plataforma mantiene una capa de datos propia; no se consulta BDNS en tiempo real desde cada usuario.
-3. Nunca se presenta un dato derivado como información oficial.
-4. Minimización: si no necesitamos un dato sensible, no lo almacenamos.
-5. La información pública básica seguirá siendo accesible; lo premium será la automatización, personalización e inteligencia.
-6. La calidad, auditabilidad y utilidad preceden a la escala.
+El servicio de ingesta obtiene primero códigos de convocatoria mediante listados por ventana temporal y recupera después el detalle de cada código. La carga se procesa de forma secuencial y paginada, con pausas y reintentos limitados para errores recuperables.
 
-## Roadmap resumido
+Cada convocatoria sigue este flujo:
 
-V0.1 Data Core → V0.2 Discovery → V0.2.5 Recent Data Foundation → V0.3 Product Discovery → V0.4 Data Launch Readiness → V1 Personalization → V2 Intelligence → V3 Expansion → V4 Platform. El detalle está en [`docs/ROADMAP.md`](docs/ROADMAP.md).
+1. Obtener el registro desde BDNS.
+2. Guardar la respuesta en raw.bdns_grant_calls junto con su hash y procedencia.
+3. Validar y transformar los campos verificados.
+4. Persistir la convocatoria normalizada y sus relaciones en core.
+5. Ejecutar RAW y CORE en una transacción por convocatoria.
 
-El nombre público actual es “Oportexa” y el dominio principal de producción es `https://www.oportexa.com`; `https://oportexa.com` redirige al host principal. El identificador técnico del repositorio continúa siendo `opportunity-intel` por trazabilidad y compatibilidad local.
+La idempotencia se apoya en el código BDNS único, el hash del payload RAW, las claves únicas de catálogos y las claves compuestas de las relaciones. Las actualizaciones no dependen de una transacción gigante por lote.
+
+Las ejecuciones incrementales y los backfills controlados se registran en ops.ingestion_runs, con estado, contadores y checkpoints de página. ops.ingestion_failures conserva los fallos por código, permite reintentos limitados y mantiene el historial cuando un fallo se resuelve. La reconciliación sólo marca un fallo como resuelto cuando existe evidencia de una ingestión posterior; la mera existencia del código en CORE no basta.
+
+El motor de backfill admite ventanas diarias, semanales y mensuales, streaming por páginas, --resume, --dry-run, reintentos y límites explícitos. Los advisory locks de PostgreSQL evitan procesar simultáneamente la misma ventana. El workflow diario de GitHub Actions revalida una ventana corta y ejecuta el informe de calidad, el quality gate y la inspección operacional.
+
+## Stack
+
+| Capa | Tecnología |
+| --- | --- |
+| Web | Next.js 16, React 19, TypeScript |
+| Ingesta | Python 3.12+, httpx, Pydantic, SQLAlchemy, psycopg |
+| Migraciones | Alembic |
+| Datos | PostgreSQL 16; esquemas raw, core y ops |
+| Testing | Vitest, pytest e integración PostgreSQL |
+| Deploy | Vercel para la aplicación web |
+| Automatización | GitHub Actions para revalidación BDNS y quality gates |
+
+## SEO y descubrimiento
+
+La web dispone de:
+
+- URLs públicas para fichas de convocatorias y exploración por región, sector, organismo y beneficiario.
+- Metadata y canonicalización mediante la configuración de Next.js y SITE_URL.
+- robots.txt.
+- Sitemap dinámico con la portada, páginas de exploración, fichas y páginas institucionales.
+- Páginas de error y rutas no encontradas controladas.
+- Páginas de búsqueda y filtros que evitan indexar combinaciones arbitrarias mediante noindex cuando contienen parámetros.
+
+Estas capacidades describen la implementación técnica. No implican una posición concreta en buscadores ni un volumen determinado de tráfico.
+
+## Estructura del repositorio
+
+~~~text
+apps/
+  web/                 # Aplicación Next.js y DAL server-only
+services/
+  ingestion/           # Cliente BDNS, ETL, backfill, calidad y operaciones
+packages/
+  database/            # Espacio para contratos y utilidades compartidas de datos
+docs/                  # Producto, arquitectura, operación, SEO y gobernanza
+adr/                   # Decisiones arquitectónicas
+~~~
+
+## Desarrollo local
+
+### Web
+
+~~~bash
+cd apps/web
+npm install
+cp .env.example .env.local
+npm run dev
+~~~
+
+Variables disponibles en apps/web/.env.example:
+
+~~~bash
+DATABASE_URL=postgresql+psycopg://user:password@127.0.0.1:55432/opportunity_intel
+SITE_URL=http://localhost:3000
+~~~
+
+Comandos de validación web:
+
+~~~bash
+npm run lint
+npm run test
+npm run build
+~~~
+
+### PostgreSQL e ingesta
+
+Desde la raíz del repositorio, PostgreSQL local puede levantarse con Docker Compose:
+
+~~~bash
+docker compose up -d postgres
+docker compose ps
+~~~
+
+Después, para preparar el servicio Python:
+
+~~~bash
+cd services/ingestion
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+export DATABASE_URL='postgresql+psycopg://user:password@127.0.0.1:55432/opportunity_intel'
+alembic upgrade head
+pytest
+~~~
+
+La contraseña del ejemplo es ficticia. No se deben guardar credenciales en Git.
+
+Ejemplos de comandos operativos:
+
+~~~bash
+python scripts/inspect_db.py
+python scripts/data_quality_report.py
+python scripts/quality_gate.py
+python scripts/inspect_ingestion_runs.py --failed
+python scripts/backfill_calls.py \
+  --date-from 2026-08-18 \
+  --date-to 2026-08-19 \
+  --window daily \
+  --dry-run
+~~~
+
+Para una operación real de backfill deben seguirse los límites, comprobaciones y pasos de docs/BACKFILL_RUNBOOK.md.
+
+## Calidad y testing
+
+El repositorio incluye:
+
+- Tests unitarios de cliente BDNS, transformaciones, parámetros, ventanas y operaciones de backfill.
+- Tests de integración opcionales contra PostgreSQL.
+- Lint, tests y build de la aplicación web.
+- Migraciones Alembic como fuente de verdad del esquema.
+- Informe de calidad de datos sobre duplicados, integridad, referencias RAW/CORE, fechas y relaciones.
+- Quality gate que bloquea fallos de integridad o fallos de ingesta no resueltos.
+- Inspección read-only de ejecuciones y fallos operacionales.
+
+Los tests que requieren PostgreSQL se omiten cuando no se proporciona una base de datos de prueba aislada.
+
+## Estado del proyecto
+
+Oportexa está publicada en producción y se encuentra en una fase inicial de indexación y observación. La base técnica de Discovery, la ingesta persistente, la revalidación y el backfill controlado están implementados; la cobertura de datos continúa siendo parcial.
+
+El proyecto seguirá evolucionando a partir de la cobertura disponible, la calidad del dato y la observación del uso real. Actualmente no hay usuarios, autenticación, newsletter, pagos, IA, matching ni monetización implementados.
+
+## Fuente de los datos y aviso
+
+La información procede principalmente de datos públicos de BDNS/SNPSAP. Oportexa es un proyecto independiente y no es una web oficial de la Administración.
+
+La información puede cambiar o contener diferencias respecto de otras publicaciones. Para la información definitiva, requisitos, plazos y trámites deben consultarse las fuentes oficiales enlazadas y el organismo competente.
+
+## Autor
+
+David José Simón Soler
