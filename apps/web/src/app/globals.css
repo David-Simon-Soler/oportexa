@@ -28,6 +28,12 @@ button, input, select { font: inherit; }
 .section-title { font-size: clamp(1.65rem, 3vw, 2.25rem); line-height: 1.06; letter-spacing: -.035em; font-weight: 650; }
 .body-copy { color: var(--muted); line-height: 1.7; }
 .panel { border: 1px solid var(--border); background: var(--surface); border-radius: 1rem; }
+.legal-copy { color: var(--muted); font-size: .98rem; line-height: 1.75; }
+.legal-copy section + section { margin-top: 2.75rem; }
+.legal-copy h2 { color: var(--foreground); font-size: 1.35rem; font-weight: 650; letter-spacing: -.025em; line-height: 1.2; margin: 0 0 .75rem; }
+.legal-copy p + p { margin-top: 1rem; }
+.legal-copy a { color: var(--accent); }
+.legal-copy dd { color: var(--foreground); }
 .focus-ring:focus-visible, a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #9ad3bc; outline-offset: 3px; }
 
 @media (min-width: 48rem) { .container-shell { width: min(100% - 3rem, 78rem); } }
