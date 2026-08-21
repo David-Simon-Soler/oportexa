@@ -72,9 +72,9 @@ export async function getGrantByCode(code: string): Promise<GrantDetail | null> 
   return { ...summary, description: row.description as string | null, purposeDescription: row.purpose_description as string | null, regulatoryBasesDescription: row.regulatory_bases_description as string | null, regulatoryBasesUrl: row.regulatory_bases_url as string | null, electronicOfficeUrl: row.electronic_office_url as string | null, funds: (row.funds ?? []) as FundRef[], provenance: { source: "BDNS", sourceReceivedDate: row.detail_source_received_date as string | null, firstSeenAt, lastSeenAt }, firstSeenAt, lastSeenAt };
 }
 
-export async function getGrantSitemapEntries(): Promise<Array<{ bdnsCode: string; title: string | null; lastSeenAt: string | null }>> {
-  const result = await getPool().query("SELECT bdns_code, title, last_seen_at::text AS last_seen_at FROM core.grant_calls ORDER BY bdns_code");
-  return result.rows.map((row) => ({ bdnsCode: String(row.bdns_code), title: row.title as string | null, lastSeenAt: row.last_seen_at as string | null }));
+export async function getGrantSitemapEntries(): Promise<Array<{ bdnsCode: string; title: string | null; lastSeenAt: Date | null }>> {
+  const result = await getPool().query("SELECT bdns_code, title, last_seen_at FROM core.grant_calls ORDER BY bdns_code");
+  return result.rows.map((row) => ({ bdnsCode: String(row.bdns_code), title: row.title as string | null, lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at) : null }));
 }
 
 export async function getGrantCodes(): Promise<string[]> { const result = await getPool().query("SELECT bdns_code FROM core.grant_calls ORDER BY bdns_code"); return result.rows.map((row) => String(row.bdns_code)); }
