@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import os
 from types import SimpleNamespace
 from pathlib import Path
@@ -21,7 +21,14 @@ from opportunity_ingestion.db.models import (
 from opportunity_ingestion.db.session import create_db_engine, session_factory
 from opportunity_ingestion.repositories.grant_calls import upsert_core_grant_call
 from opportunity_ingestion.repositories.raw_grant_calls import canonical_payload_hash, upsert_raw_grant_call
-from opportunity_ingestion.backfill.ops import record_failure, release_window_lock, try_acquire_window_lock
+from opportunity_ingestion.backfill.ops import (
+    record_failure,
+    release_window_lock,
+    reconcile_failures_with_successful_ingestion,
+    resolve_failures_for_code,
+    try_acquire_window_lock,
+    unresolved_failure_count,
+)
 from opportunity_ingestion.backfill.runner import BackfillInterrupted, BackfillResult, _retry_run_failures, _update_page_checkpoint
 from opportunity_ingestion.transformers.grant_call import raw_payload, transform_call
 from ..test_data_core import detail
@@ -96,6 +103,110 @@ def test_failure_is_deduplicated_and_can_be_resolved(test_engine):
         failure.resolved_at = datetime.now(timezone.utc)
         session.commit()
         assert failure.resolved_at is not None
+
+
+def test_unresolved_failure_stays_pending_without_successful_core_call(test_engine):
+    with session_factory(test_engine)() as session:
+        baseline = unresolved_failure_count(session)
+        with session.begin():
+            run = IngestionRun(source="bdns", date_from=date(2024, 4, 1), date_to=date(2024, 4, 1), status="failed")
+            session.add(run)
+            session.flush()
+            record_failure(session, run_id=run.id, bdns_code="still-pending", stage="detail", error=ValueError("temporary"))
+        assert unresolved_failure_count(session) == baseline + 1
+
+
+def test_existing_core_code_with_later_failure_still_blocks_quality_gate(test_engine):
+    code = "existing-core-later-failure"
+    successful_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+    with session_factory(test_engine)() as session:
+        baseline = unresolved_failure_count(session)
+        with session.begin():
+            raw, _ = upsert_raw_grant_call(
+                session,
+                bdns_code=code,
+                payload=raw_payload(detail(codigoBDNS=code)),
+                source_endpoint="test",
+                observed_at=successful_at,
+            )
+            upsert_core_grant_call(
+                session,
+                data=transform_call(detail(codigoBDNS=code)),
+                raw_id=raw.id,
+                observed_at=successful_at,
+            )
+            run = IngestionRun(source="bdns", date_from=date(2024, 7, 1), date_to=date(2024, 7, 1), status="failed")
+            session.add(run)
+            session.flush()
+            record_failure(session, run_id=run.id, bdns_code=code, stage="detail", error=ValueError("later failure"))
+        assert unresolved_failure_count(session) == baseline + 1
+        failure = session.scalar(select(IngestionFailure).where(IngestionFailure.bdns_code == code))
+        assert failure is not None
+        assert failure.resolved_at is None
+
+
+def test_successful_core_call_resolves_all_historical_failures_for_code(test_engine):
+    with session_factory(test_engine)() as session:
+        baseline = unresolved_failure_count(session)
+        with session.begin():
+            run = IngestionRun(source="bdns", date_from=date(2024, 5, 1), date_to=date(2024, 5, 1), status="failed")
+            session.add(run)
+            session.flush()
+            record_failure(session, run_id=run.id, bdns_code="recovered-code", stage="detail", error=ValueError("temporary"))
+            record_failure(session, run_id=run.id, bdns_code="other-pending", stage="detail", error=ValueError("temporary"))
+        with session.begin():
+            raw, _ = upsert_raw_grant_call(session, bdns_code="recovered-code", payload=raw_payload(detail(codigoBDNS="recovered-code")), source_endpoint="test")
+            upsert_core_grant_call(session, data=transform_call(detail(codigoBDNS="recovered-code")), raw_id=raw.id)
+            assert resolve_failures_for_code(session, "recovered-code") == 1
+        assert unresolved_failure_count(session) == baseline + 1
+        failure = session.scalar(select(IngestionFailure).where(IngestionFailure.bdns_code == "recovered-code"))
+        assert failure.resolved_at is not None
+
+
+def test_reconcile_with_later_success_is_idempotent_and_retains_rows(test_engine):
+    failed_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+    successful_at = failed_at + timedelta(minutes=1)
+    with session_factory(test_engine)() as session:
+        with session.begin():
+            run = IngestionRun(source="bdns", date_from=date(2024, 6, 1), date_to=date(2024, 6, 1), status="failed")
+            session.add(run)
+            session.flush()
+            failure = record_failure(session, run_id=run.id, bdns_code="reconcile-code", stage="detail", error=ValueError("temporary"))
+            failure.first_failed_at = failed_at
+            failure.last_attempt_at = failed_at
+        with session.begin():
+            raw, _ = upsert_raw_grant_call(
+                session,
+                bdns_code="reconcile-code",
+                payload=raw_payload(detail(codigoBDNS="reconcile-code")),
+                source_endpoint="test",
+                observed_at=successful_at,
+            )
+            upsert_core_grant_call(
+                session,
+                data=transform_call(detail(codigoBDNS="reconcile-code")),
+                raw_id=raw.id,
+                observed_at=successful_at,
+            )
+            assert reconcile_failures_with_successful_ingestion(session) == 1
+            assert reconcile_failures_with_successful_ingestion(session) == 0
+        assert session.scalar(select(func.count()).select_from(IngestionFailure).where(IngestionFailure.bdns_code == "reconcile-code")) == 1
+
+
+def test_reconcile_without_later_success_leaves_failure_pending(test_engine):
+    failed_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+    with session_factory(test_engine)() as session:
+        with session.begin():
+            run = IngestionRun(source="bdns", date_from=date(2024, 8, 1), date_to=date(2024, 8, 1), status="failed")
+            session.add(run)
+            session.flush()
+            failure = record_failure(session, run_id=run.id, bdns_code="no-later-success", stage="detail", error=ValueError("permanent"))
+            failure.first_failed_at = failed_at
+            failure.last_attempt_at = failed_at
+        assert reconcile_failures_with_successful_ingestion(session) == 0
+        failure = session.scalar(select(IngestionFailure).where(IngestionFailure.bdns_code == "no-later-success"))
+        assert failure is not None
+        assert failure.resolved_at is None
 
 
 def test_window_advisory_lock_prevents_duplicate_processing(test_engine):

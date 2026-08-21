@@ -70,6 +70,21 @@ python scripts/query_intelligence.py search --region "Tarragona" --open
 python scripts/data_quality_report.py
 ```
 
+Para reconciliar fallos históricos, primero revisar el número de candidatos con
+evidencia de una ingestión posterior en RAW/CORE y después aplicar la resolución
+explícita:
+
+```bash
+python scripts/reconcile_ingestion_failures.py
+python scripts/reconcile_ingestion_failures.py --apply
+```
+
+El proceso es idempotente, conserva todas las filas de `ops.ingestion_failures`
+y sólo rellena `resolved_at` cuando los timestamps de RAW/CORE demuestran una
+observación posterior a `last_attempt_at`. La mera existencia del código en
+CORE no resuelve un fallo pendiente; sólo `resolved_at` deja de bloquear el
+quality gate.
+
 Los resultados reflejan sólo el dataset local ingerido y no son necesariamente representativos de toda la BDNS.
 
 ## Revalidación automática en producción

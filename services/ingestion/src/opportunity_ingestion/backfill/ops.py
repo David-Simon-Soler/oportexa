@@ -4,10 +4,10 @@ from datetime import date, datetime, timezone
 import logging
 import re
 
-from sqlalchemy import select, text, update
+from sqlalchemy import exists, func, or_, select, text, update
 from sqlalchemy.orm import Session
 
-from opportunity_ingestion.db.models import IngestionFailure, IngestionRun
+from opportunity_ingestion.db.models import GrantCall, IngestionFailure, IngestionRun, RawBdnsGrantCall
 
 
 ACTIVE_STATUSES = ("pending", "running", "failed", "interrupted")
@@ -123,3 +123,59 @@ def unresolved_failures(session: Session, run_id: int) -> list[IngestionFailure]
 
 def resolve_failure(session: Session, failure: IngestionFailure) -> None:
     failure.resolved_at = datetime.now(timezone.utc)
+
+
+def resolve_failures_for_code(session: Session, bdns_code: str) -> int:
+    """Resolve every pending failure for a code after successful ingestion.
+
+    Failures are deliberately retained as an audit trail. A later successful
+    ingestion is the evidence that makes all earlier failures for that code
+    resolved, including failures from older runs.
+    """
+    result = session.execute(
+        update(IngestionFailure)
+        .where(IngestionFailure.bdns_code == bdns_code, IngestionFailure.resolved_at.is_(None))
+        .values(resolved_at=datetime.now(timezone.utc))
+    )
+    return result.rowcount or 0
+
+
+def unresolved_failure_count(session: Session) -> int:
+    """Count every operational failure that has not been explicitly resolved."""
+    return session.scalar(
+        select(func.count()).select_from(IngestionFailure).where(IngestionFailure.resolved_at.is_(None))
+    ) or 0
+
+
+def _successful_ingestion_exists():
+    """Return evidence of a later RAW/CORE observation for the failed code."""
+    return exists(
+        select(GrantCall.id)
+        .join(RawBdnsGrantCall, GrantCall.raw_id == RawBdnsGrantCall.id)
+        .where(
+            GrantCall.bdns_code == IngestionFailure.bdns_code,
+            or_(
+                GrantCall.last_seen_at > IngestionFailure.last_attempt_at,
+                RawBdnsGrantCall.last_seen_at > IngestionFailure.last_attempt_at,
+            ),
+        )
+    )
+
+
+def reconcilable_failure_count(session: Session) -> int:
+    """Count pending failures with demonstrable later RAW/CORE ingestion."""
+    return session.scalar(
+        select(func.count())
+        .select_from(IngestionFailure)
+        .where(IngestionFailure.resolved_at.is_(None), _successful_ingestion_exists())
+    ) or 0
+
+
+def reconcile_failures_with_successful_ingestion(session: Session) -> int:
+    """Resolve only failures followed by a later successful RAW/CORE observation."""
+    result = session.execute(
+        update(IngestionFailure)
+        .where(IngestionFailure.resolved_at.is_(None), _successful_ingestion_exists())
+        .values(resolved_at=datetime.now(timezone.utc))
+    )
+    return result.rowcount or 0

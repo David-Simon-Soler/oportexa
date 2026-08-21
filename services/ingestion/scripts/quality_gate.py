@@ -9,7 +9,8 @@ from sqlalchemy import func, select, text
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from opportunity_ingestion.db.models import GrantCall, IngestionFailure  # noqa: E402
+from opportunity_ingestion.db.models import GrantCall  # noqa: E402
+from opportunity_ingestion.backfill.ops import unresolved_failure_count  # noqa: E402
 from opportunity_ingestion.db.session import create_db_engine, session_factory  # noqa: E402
 
 
@@ -59,9 +60,7 @@ def main() -> int:
                         "where c.id is null"
                     )
                 ).scalar_one()
-            unresolved_failures = session.scalar(
-                select(func.count()).select_from(IngestionFailure).where(IngestionFailure.resolved_at.is_(None))
-            ) or 0
+            unresolved_failures = unresolved_failure_count(session)
 
         checks = {
             "duplicate CORE BDNS codes": duplicate_core,

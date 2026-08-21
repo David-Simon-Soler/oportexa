@@ -9,7 +9,7 @@ import time
 from sqlalchemy import select
 
 from opportunity_ingestion.bdns import BdnsClient
-from opportunity_ingestion.db.models import IngestionFailure, IngestionRun
+from opportunity_ingestion.db.models import IngestionRun
 from opportunity_ingestion.db.session import create_db_engine, session_factory
 from opportunity_ingestion.etl import ingest_one
 
@@ -19,8 +19,8 @@ from .ops import (
     latest_run,
     lock_key,
     record_failure,
+    resolve_failures_for_code,
     release_window_lock,
-    resolve_failure,
     sanitize_error,
     try_acquire_window_lock,
     unresolved_failures,
@@ -97,9 +97,7 @@ def _retry_run_failures(engine, run_id: int, client: BdnsClient, *, result: Back
             continue
         with session_factory(engine)() as session:
             with session.begin():
-                current = session.get(IngestionFailure, failure.id)
-                if current is not None:
-                    resolve_failure(session, current)
+                resolve_failures_for_code(session, failure.bdns_code)
         result.fetched += 1
         result.succeeded += 1
         result.requests_approx += 1
@@ -264,6 +262,9 @@ def _run_window(
                         result.fetched += 1
                         result.succeeded += 1
                         result.requests_approx += 1
+                        with session_factory(engine)() as success_session:
+                            with success_session.begin():
+                                resolve_failures_for_code(success_session, code)
                         if outcome == "new": page_new += 1; result.new += 1
                         elif outcome == "updated": page_updated += 1; result.updated += 1
                         else: page_unchanged += 1; result.unchanged += 1
