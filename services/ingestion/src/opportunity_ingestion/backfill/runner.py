@@ -9,7 +9,7 @@ import time
 from sqlalchemy import select
 
 from opportunity_ingestion.bdns import BdnsClient
-from opportunity_ingestion.db.models import IngestionRun
+from opportunity_ingestion.db.models import IngestionFailure, IngestionRun
 from opportunity_ingestion.db.session import create_db_engine, session_factory
 from opportunity_ingestion.etl import ingest_one
 
