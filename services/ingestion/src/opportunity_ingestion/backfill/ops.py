@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+import logging
 import re
 
 from sqlalchemy import select, text, update
@@ -10,12 +11,36 @@ from opportunity_ingestion.db.models import IngestionFailure, IngestionRun
 
 
 ACTIVE_STATUSES = ("pending", "running", "failed", "interrupted")
+logger = logging.getLogger(__name__)
 
 
 def sanitize_error(error: BaseException, *, limit: int = 1000) -> str:
-    value = re.sub(r"\s+", " ", f"{type(error).__name__}: {error}").strip()
+    return _sanitize_text(f"{type(error).__name__}: {error}", limit=limit)
+
+
+def _sanitize_text(value: str, *, limit: int) -> str:
+    value = re.sub(r"\s+", " ", value).strip()
     value = re.sub(r"(?i)(password|token|secret|database_url)=[^ ]+", r"\1=[REDACTED]", value)
     return value[:limit]
+
+
+def database_error_details(error: BaseException) -> dict[str, str | None]:
+    """Return safe DBAPI diagnostics when an error exposes PostgreSQL details."""
+    original = getattr(error, "orig", error)
+    diagnostic = getattr(original, "diag", None)
+
+    def value(*names: str) -> str | None:
+        for name in names:
+            candidate = getattr(original, name, None) or getattr(diagnostic, name, None)
+            if candidate:
+                return _sanitize_text(str(candidate), limit=500)
+        return None
+
+    return {
+        "sqlstate": value("sqlstate", "pgcode"),
+        "constraint": value("constraint_name"),
+        "detail": value("message_detail", "detail"),
+    }
 
 
 def lock_key(source: str, date_from: date, date_to: date) -> str:
@@ -23,11 +48,21 @@ def lock_key(source: str, date_from: date, date_to: date) -> str:
 
 
 def try_acquire_window_lock(connection, key: str) -> bool:
+    """Acquire a session-level lock on an AUTOCOMMIT connection."""
     return bool(connection.execute(text("SELECT pg_try_advisory_lock(hashtextextended(:key, 0))"), {"key": key}).scalar_one())
 
 
 def release_window_lock(connection, key: str) -> None:
-    connection.execute(text("SELECT pg_advisory_unlock(hashtextextended(:key, 0))"), {"key": key})
+    """Release a session-level lock without masking the window's original error."""
+    try:
+        connection.execute(text("SELECT pg_advisory_unlock(hashtextextended(:key, 0))"), {"key": key})
+    except Exception as error:
+        logger.warning(
+            "window_lock_release_failed key=%s error_type=%s error=%s",
+            key,
+            type(error).__name__,
+            sanitize_error(error),
+        )
 
 
 def latest_run(session: Session, *, source: str, date_from: date, date_to: date) -> IngestionRun | None:

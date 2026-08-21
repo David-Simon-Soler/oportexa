@@ -15,6 +15,7 @@ from opportunity_ingestion.etl import ingest_one
 
 from .ops import (
     create_run,
+    database_error_details,
     latest_run,
     lock_key,
     record_failure,
@@ -176,7 +177,10 @@ def run_backfill(
     try:
         for item in selected:
             key = lock_key(SOURCE, item.date_from, item.date_to)
-            with engine.connect() as lock_connection:
+            # pg_advisory_lock is session-level, so keep this exact connection
+            # for the whole window. AUTOCOMMIT prevents SQLAlchemy's implicit
+            # transaction from sitting idle while BDNS requests are in flight.
+            with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as lock_connection:
                 if not try_acquire_window_lock(lock_connection, key):
                     logger.warning("window_skipped_locked date_from=%s date_to=%s", item.date_from, item.date_to)
                     result.skipped += 1
@@ -271,7 +275,15 @@ def _run_window(
                         with session_factory(engine)() as failure_session:
                             with failure_session.begin():
                                 record_failure(failure_session, run_id=run_id, bdns_code=code, stage="detail", error=error)
-                        logger.warning("grant_failed bdns_code=%s error_type=%s", code, type(error).__name__)
+                        diagnostics = database_error_details(error)
+                        logger.warning(
+                            "grant_failed bdns_code=%s error_type=%s sqlstate=%s constraint=%s detail=%s",
+                            code,
+                            type(error).__name__,
+                            diagnostics["sqlstate"] or "-",
+                            diagnostics["constraint"] or "-",
+                            diagnostics["detail"] or "-",
+                        )
                     _raise_if_interrupted(interrupted_state)
                 _update_page_checkpoint(engine, run_id, page=page_number, fetched=page_fetched, succeeded=page_succeeded, failed=page_failed)
                 _raise_if_interrupted(interrupted_state)
